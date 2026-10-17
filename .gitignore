@@ -1,0 +1,66 @@
+# ========================================================
+# CivicTrack — Git Ignore Configuration
+# For PHP, MySQL, HTML, CSS, JavaScript (XAMPP Environment)
+# ========================================================
+
+# 1. Local Environment & Secret Credentials
+config/database.local.php
+*.local.php
+.env
+.env.*
+!.env.example
+
+# 2. Database Dumps & Exports (Real/Live User Data)
+*.sql.gz
+*.sql.zip
+*.dump
+*.bak
+*.backup
+database/dumps/
+database/backup/
+database/exports/
+# Keep essential schema and demonstration seeds
+!database/schema.sql
+!database/master_data.sql
+!database/sample_data.sql
+!database/seed.sql
+
+# 3. Dynamic User Uploads (Preserve folders & sample placeholders)
+uploads/complaints/*
+!uploads/complaints/.gitkeep
+!uploads/complaints/sample_*
+uploads/resolutions/*
+!uploads/resolutions/.gitkeep
+!uploads/resolutions/sample_*
+
+# 4. Logs, Errors & Cache
+*.log
+error_log
+php_error.log
+debug.log
+tmp/
+temp/
+cache/
+*.tmp
+
+# 5. Operating System Metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+*~
+
+# 6. IDE & Code Editor Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# 7. Package Managers & Dependency Directories (if used)
+vendor/
+node_modules/

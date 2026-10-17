@@ -1,44 +1,62 @@
 <?php
 /**
  * CivicTrack — Authentication & Access Control System
+ * Strict Role-Based Access Control, Session Security, and Inactivity Timeout
  */
 
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../config/database.php';
 
+// Session inactivity timeout in seconds (2 hours)
+if (!defined('SESSION_TIMEOUT_SECONDS')) {
+    define('SESSION_TIMEOUT_SECONDS', 7200);
+}
+
 /**
- * Checks if a user is currently logged in.
+ * Checks if a user is currently logged in and session is not timed out.
  */
 function isLoggedIn(): bool {
-    return !empty($_SESSION['user_id']) && !empty($_SESSION['user_role']);
+    if (empty($_SESSION['user_id']) || empty($_SESSION['user_role'])) {
+        return false;
+    }
+
+    // Check inactivity timeout
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT_SECONDS)) {
+        logoutUser();
+        return false;
+    }
+
+    // Update last activity timestamp
+    $_SESSION['last_activity'] = time();
+    return true;
 }
 
 /**
  * Returns the currently authenticated user's ID or null.
  */
 function getUserId(): ?int {
-    return isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+    return isLoggedIn() ? (int)$_SESSION['user_id'] : null;
 }
 
 /**
  * Returns the currently authenticated user's role (citizen, officer, admin) or null.
  */
 function getUserRole(): ?string {
-    return $_SESSION['user_role'] ?? null;
+    return isLoggedIn() ? (string)$_SESSION['user_role'] : null;
 }
 
 /**
  * Returns the currently authenticated user's full name or empty string.
  */
 function getUserName(): string {
-    return $_SESSION['user_name'] ?? 'Guest';
+    return isLoggedIn() ? (string)($_SESSION['user_name'] ?? 'User') : 'Guest';
 }
 
 /**
  * Returns the user's department ID if role is officer.
  */
 function getUserDeptId(): ?int {
-    return isset($_SESSION['user_dept_id']) ? (int)$_SESSION['user_dept_id'] : null;
+    return (isLoggedIn() && isset($_SESSION['user_dept_id'])) ? (int)$_SESSION['user_dept_id'] : null;
 }
 
 /**
@@ -83,14 +101,14 @@ function getDashboardUrlByRole(?string $role = null): string {
  */
 function requireLogin(): void {
     if (!isLoggedIn()) {
-        $redirectUrl = urlencode($_SERVER['REQUEST_URI']);
+        $redirectUrl = urlencode($_SERVER['REQUEST_URI'] ?? '');
         header('Location: ' . getBaseUrl() . 'login.php?redirect=' . $redirectUrl);
         exit;
     }
 }
 
 /**
- * Enforces role-based authorization. If user does not have permission, redirects or shows 403.
+ * Enforces role-based authorization. If user does not have permission, terminates with HTTP 403.
  *
  * @param string|array $allowedRoles
  */
@@ -101,12 +119,34 @@ function requireRole($allowedRoles): void {
         http_response_code(403);
         $expected = is_array($allowedRoles) ? implode(', ', $allowedRoles) : $allowedRoles;
         die('
-        <div style="font-family:sans-serif; max-width:550px; margin:60px auto; padding:30px; border:1px solid #f87171; border-radius:12px; background:#fff5f5; text-align:center;">
-            <div style="font-size:48px; margin-bottom:10px;">🛡️</div>
-            <h2 style="color:#b91c1c; margin-top:0;">403 Access Denied</h2>
-            <p style="color:#4b5563;">You do not have the required permissions to view this portal. Required role: <strong>' . htmlspecialchars($expected) . '</strong>.</p>
-            <a href="' . htmlspecialchars(getDashboardUrlByRole()) . '" style="display:inline-block; margin-top:15px; background:#1e40af; color:#fff; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:600;">Return to Your Dashboard</a>
-        </div>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>403 Access Denied — CivicTrack</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        </head>
+        <body class="bg-light d-flex align-items-center justify-content-center vh-100">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-5 bg-white" style="max-width: 520px;">
+                <div class="rounded-circle bg-danger-subtle text-danger d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
+                    <i class="bi bi-shield-x"></i>
+                </div>
+                <h3 class="fw-bold text-dark mb-2">403 Access Forbidden</h3>
+                <p class="text-muted small mb-4">
+                    Your account does not have permission to access this portal. Required authorization: <strong class="text-dark">' . htmlspecialchars($expected) . '</strong>.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="' . htmlspecialchars(getDashboardUrlByRole()) . '" class="btn btn-primary px-4 py-2">
+                        Return to Your Dashboard
+                    </a>
+                    <a href="' . htmlspecialchars(getBaseUrl()) . 'logout.php" class="btn btn-outline-secondary px-3 py-2">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </body>
+        </html>
         ');
     }
 }
@@ -127,6 +167,7 @@ function loginUser(array $user): void {
     $_SESSION['user_phone'] = $user['phone'] ?? '';
     $_SESSION['user_dept_id'] = !empty($user['dept_id']) ? (int)$user['dept_id'] : null;
     $_SESSION['last_login_time'] = time();
+    $_SESSION['last_activity'] = time();
 }
 
 /**

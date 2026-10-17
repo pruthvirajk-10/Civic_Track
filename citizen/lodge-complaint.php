@@ -79,6 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception('Selected category is not mapped to an active municipal department.');
                 }
 
+                // Start atomic transaction
+                $pdo->beginTransaction();
+
                 // Generate unique reference number & SLA deadline
                 $refNumber = generateReferenceNumber($pdo);
                 $slaDeadline = calculateSlaDeadline($pdo, $categoryId, $priority);
@@ -145,9 +148,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     );
                 }
 
+                $pdo->commit();
                 $successRef = $refNumber;
 
             } catch (Exception $e) {
+                if (isset($pdo) && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
                 $errors[] = 'Failed to submit grievance: ' . $e->getMessage();
             }
         }

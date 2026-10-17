@@ -14,10 +14,20 @@ $complaint = null;
 $logs = [];
 $feedback = null;
 $error = '';
+$sampleTickets = [];
+
+try {
+    $pdo = getDbConnection();
+    // Fetch available complaints for ticket links
+    $sStmt = $pdo->query("SELECT reference_number, title, status FROM complaints ORDER BY created_at DESC LIMIT 3");
+    $sampleTickets = $sStmt->fetchAll();
+} catch (Exception $e) {
+    $sampleTickets = [];
+}
 
 if (!empty($refInput)) {
     try {
-        $pdo = getDbConnection();
+        $pdo = $pdo ?? getDbConnection();
 
         // Fetch complaint details with category and department joins
         $stmt = $pdo->prepare("
@@ -97,12 +107,18 @@ require_once __DIR__ . '/includes/navbar.php';
             </div>
         </div>
         <div class="text-center py-4">
-            <p class="text-muted">Want to test with sample complaint tickets? Click any reference below:</p>
-            <div class="d-flex justify-content-center gap-2 flex-wrap">
-                <a href="track.php?ref=CT-2026-10001" class="btn btn-sm btn-outline-primary">CT-2026-10001 (Resolved Pothole)</a>
-                <a href="track.php?ref=CT-2026-10002" class="btn btn-sm btn-outline-primary">CT-2026-10002 (In Progress Garbage)</a>
-                <a href="track.php?ref=CT-2026-10003" class="btn btn-sm btn-outline-primary">CT-2026-10003 (Assigned Streetlight)</a>
-            </div>
+            <?php if (!empty($sampleTickets)): ?>
+                <p class="text-muted">You can check any of these currently available complaints:</p>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <?php foreach ($sampleTickets as $st): ?>
+                        <a href="track.php?ref=<?= urlencode($st['reference_number']) ?>" class="btn btn-sm btn-outline-primary">
+                            <?= e($st['reference_number']) ?> (<?= e($st['status']) ?>)
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p class="text-muted small">No complaints have been lodged yet. If you are a citizen, you can <a href="citizen/lodge-complaint.php" class="fw-bold">lodge a new complaint</a>.</p>
+            <?php endif; ?>
         </div>
     <?php elseif ($complaint): ?>
         <!-- Complaint Status Banner -->
@@ -330,12 +346,18 @@ require_once __DIR__ . '/includes/navbar.php';
             <p class="text-muted mx-auto mb-4" style="max-width:500px;">
                 Every civic complaint lodged with the municipal corporation is assigned a unique reference code. Enter your code above to inspect live officer assignments and ground progress.
             </p>
-            <div class="d-flex justify-content-center gap-2 flex-wrap">
-                <span class="text-muted small me-2 align-self-center">Try Demo Tickets:</span>
-                <a href="track.php?ref=CT-2026-10001" class="btn btn-sm btn-outline-primary">CT-2026-10001</a>
-                <a href="track.php?ref=CT-2026-10002" class="btn btn-sm btn-outline-primary">CT-2026-10002</a>
-                <a href="track.php?ref=CT-2026-10003" class="btn btn-sm btn-outline-primary">CT-2026-10003</a>
-            </div>
+            <?php if (!empty($sampleTickets)): ?>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <span class="text-muted small me-2 align-self-center">Recent Live Tickets:</span>
+                    <?php foreach ($sampleTickets as $st): ?>
+                        <a href="track.php?ref=<?= urlencode($st['reference_number']) ?>" class="btn btn-sm btn-outline-primary">
+                            <?= e($st['reference_number']) ?> (<?= e($st['status']) ?>)
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p class="text-muted small mb-0">System is in clean mode. <a href="citizen/lodge-complaint.php" class="fw-bold text-primary">Lodge a complaint</a> to test the live tracking lifecycle.</p>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 </div>

@@ -1,0 +1,17 @@
+<?php
+/**
+ * CivicTrack — Local Database Configuration Template
+ * 
+ * If your local development environment (e.g., MySQL on custom port or with a password)
+ * requires different credentials from the default XAMPP settings (root / empty password),
+ * copy this file to "config/database.local.php" and uncomment/edit your settings below.
+ * 
+ * IMPORTANT: 
+ * "config/database.local.php" is excluded in .gitignore and will NEVER be committed to Git.
+ */
+
+// define('DB_HOST', 'localhost');
+// define('DB_NAME', 'civictrack_db');
+// define('DB_USER', 'root');
+// define('DB_PASS', 'your_local_password');
+// define('DB_CHARSET', 'utf8mb4');

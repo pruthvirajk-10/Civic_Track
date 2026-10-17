@@ -19,6 +19,16 @@ if (isLoggedIn()) {
 $error = '';
 $emailInput = trim($_POST['email'] ?? '');
 $redirectTarget = trim($_GET['redirect'] ?? $_POST['redirect'] ?? '');
+$hasSampleOfficer = false;
+$hasSampleCitizen = false;
+
+try {
+    $pdo = getDbConnection();
+    $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE email = 'officer.roads@civictrack.gov'");
+    $hasSampleOfficer = ((int)$stmt->fetchColumn()) > 0;
+    $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE email = 'aarav.mehta@example.com'");
+    $hasSampleCitizen = ((int)$stmt->fetchColumn()) > 0;
+} catch (Exception $e) {}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate CSRF
@@ -131,27 +141,38 @@ require_once __DIR__ . '/includes/navbar.php';
                     <!-- Quick Demo Credentials Filler -->
                     <div class="mt-4 pt-3 border-top">
                         <div class="small fw-bold text-muted text-uppercase mb-2 text-center" style="font-size:0.75rem; letter-spacing:0.05em;">
-                            ⚡ 1-Click Demo Login Shortcuts
+                            ⚡ 1-Click Login Shortcuts
                         </div>
-                        <div class="row g-2">
-                            <div class="col-4">
+                        <div class="row g-2 justify-content-center">
+                            <div class="<?= ($hasSampleOfficer && $hasSampleCitizen) ? 'col-4' : 'col-6' ?>">
                                 <button type="button" class="btn btn-sm btn-outline-purple w-100 text-truncate" style="border-color:#7c3aed; color:#7c3aed; font-size:0.75rem;" 
                                         onclick="fillDemo('admin@civictrack.gov', 'Admin@123')">
                                     <i class="bi bi-shield-fill"></i> Admin
                                 </button>
                             </div>
-                            <div class="col-4">
-                                <button type="button" class="btn btn-sm btn-outline-teal w-100 text-truncate" style="border-color:#0d9488; color:#0d9488; font-size:0.75rem;" 
-                                        onclick="fillDemo('officer.roads@civictrack.gov', 'Officer@123')">
-                                    <i class="bi bi-person-badge"></i> Officer
-                                </button>
-                            </div>
-                            <div class="col-4">
-                                <button type="button" class="btn btn-sm btn-outline-primary w-100 text-truncate" style="font-size:0.75rem;" 
-                                        onclick="fillDemo('aarav.mehta@example.com', 'Citizen@123')">
-                                    <i class="bi bi-person-fill"></i> Citizen
-                                </button>
-                            </div>
+                            <?php if ($hasSampleOfficer): ?>
+                                <div class="col-4">
+                                    <button type="button" class="btn btn-sm btn-outline-teal w-100 text-truncate" style="border-color:#0d9488; color:#0d9488; font-size:0.75rem;" 
+                                            onclick="fillDemo('officer.roads@civictrack.gov', 'Officer@123')">
+                                        <i class="bi bi-person-badge"></i> Officer
+                                    </button>
+                                </div>
+                            <?php endif; ?>
+                            <?php if ($hasSampleCitizen): ?>
+                                <div class="col-4">
+                                    <button type="button" class="btn btn-sm btn-outline-primary w-100 text-truncate" style="font-size:0.75rem;" 
+                                            onclick="fillDemo('aarav.mehta@example.com', 'Citizen@123')">
+                                        <i class="bi bi-person-fill"></i> Citizen
+                                    </button>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!$hasSampleOfficer && !$hasSampleCitizen): ?>
+                                <div class="col-12 mt-2 text-center">
+                                    <span class="text-muted" style="font-size:0.72rem;">
+                                        Clean Mode: Officer & Citizen accounts can be loaded via <a href="setup.php" class="text-primary text-decoration-none">Setup</a> or created via <a href="register.php" class="text-primary text-decoration-none">Register</a>.
+                                    </span>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

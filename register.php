@@ -37,14 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $confirmPassword = $_POST['confirm_password'] ?? '';
 
         // Validation
-        if (empty($formData['name'])) {
-            $errors[] = 'Full name is required.';
+        if (empty($formData['name']) || strlen($formData['name']) < 2) {
+            $errors[] = 'Full name must be at least 2 characters long.';
         }
         if (empty($formData['email']) || !filter_var($formData['email'], FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'A valid email address is required.';
         }
-        if (empty($formData['phone'])) {
-            $errors[] = 'Contact phone number is required.';
+        if (empty($formData['phone']) || !preg_match('/^[0-9+\s\-]{8,15}$/', $formData['phone'])) {
+            $errors[] = 'Contact phone number must be 8 to 15 digits (valid phone format).';
         }
         if (empty($formData['ward'])) {
             $errors[] = 'Please specify your residence ward or zone.';
@@ -66,7 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($stmt->fetchColumn() > 0) {
                     $errors[] = 'An account with this email address already exists. Please log in.';
                 } else {
-                    // Hash password securely
+                    $pdo->beginTransaction();
+
+                    // Hash password securely with BCRYPT
                     $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
                     // Insert citizen
@@ -85,6 +87,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $newUserId = (int)$pdo->lastInsertId();
 
+                    // Send welcome notification
+                    createNotification($pdo, $newUserId, null, 'Welcome to CivicTrack', 'Your citizen account has been successfully created. You can now lodge and track civic complaints in real time.');
+
+                    $pdo->commit();
+
                     // Log in the user immediately
                     loginUser([
                         'user_id' => $newUserId,
@@ -95,14 +102,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'dept_id' => null
                     ]);
 
-                    // Send welcome notification
-                    createNotification($pdo, $newUserId, null, 'Welcome to CivicTrack', 'Your citizen account has been successfully created. You can now lodge and track civic complaints in real time.');
-
                     setFlash('success', 'Welcome to CivicTrack, ' . $formData['name'] . '! Your account is active.');
                     header('Location: ' . getBaseUrl() . 'citizen/dashboard.php');
                     exit;
                 }
             } catch (Exception $e) {
+                if (isset($pdo) && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
                 $errors[] = 'Registration error: ' . $e->getMessage();
             }
         }

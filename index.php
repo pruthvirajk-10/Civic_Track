@@ -63,9 +63,21 @@ try {
     $stmt = $pdo->query("SELECT * FROM complaint_categories WHERE is_active = 1 ORDER BY category_id ASC");
     $categories = $stmt->fetchAll();
 
+    // Query live GPS coordinates for public map
+    $stmt = $pdo->query("
+        SELECT c.complaint_id, c.reference_number, c.title, c.latitude, c.longitude, c.status, c.ward,
+               cat.category_name
+        FROM complaints c
+        JOIN complaint_categories cat ON c.category_id = cat.category_id
+        WHERE c.latitude IS NOT NULL AND c.longitude IS NOT NULL AND c.latitude != 0 AND c.longitude != 0
+        LIMIT 50
+    ");
+    $mapPins = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 } catch (Exception $e) {
     // If DB is not connected yet, fallbacks are clean zero values
 }
+$mapPins = $mapPins ?? [];
 
 require_once __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/includes/navbar.php';
@@ -341,54 +353,72 @@ require_once __DIR__ . '/includes/navbar.php';
 </section>
 
 <!-- Recent Public Resolved Showcase -->
-<?php if (!empty($recentResolved)): ?>
 <section class="py-5 bg-light border-top">
     <div class="container py-4">
         <div class="d-flex flex-wrap justify-content-between align-items-end mb-4">
             <div>
                 <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 mb-2 fw-semibold">Public Accountability</span>
                 <h2 class="fw-bold mb-1">Recently Resolved Grievances</h2>
-                <p class="text-muted mb-0">Public records of civic improvements restored across wards.</p>
+                <p class="text-muted mb-0">Verified public records of civic improvements restored across municipal wards.</p>
             </div>
             <a href="track.php" class="btn btn-outline-primary mt-2 mt-md-0">
                 <i class="bi bi-search me-1"></i> Track Any Ticket
             </a>
         </div>
 
-        <div class="row g-3">
-            <?php foreach ($recentResolved as $res): ?>
-                <div class="col-md-6 col-lg-3">
-                    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden bg-white">
-                        <div class="card-body p-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                    <i class="bi bi-check-circle-fill me-1"></i> Resolved
-                                </span>
-                                <small class="text-muted"><?= timeAgo($res['resolved_at']) ?></small>
-                            </div>
-                            <h6 class="fw-bold text-dark text-truncate mb-1" title="<?= e($res['title']) ?>">
-                                <?= e($res['title']) ?>
-                            </h6>
-                            <p class="small text-muted mb-2">
-                                <i class="bi bi-geo-alt-fill text-danger me-1"></i> <?= e($res['ward']) ?>
-                            </p>
-                            <div class="small text-primary fw-semibold mb-2">
-                                <i class="bi <?= e($res['icon_class'] ?: 'bi-tag') ?> me-1"></i> <?= e($res['category_name']) ?>
-                            </div>
-                            <div class="pt-2 border-top d-flex justify-content-between align-items-center">
-                                <span class="text-muted" style="font-size:0.75rem;">Ref: <code><?= e($res['reference_number']) ?></code></span>
-                                <a href="track.php?ref=<?= urlencode($res['reference_number']) ?>" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;">
-                                    View Proof
-                                </a>
+        <?php if (!empty($recentResolved)): ?>
+            <div class="row g-3">
+                <?php foreach ($recentResolved as $res): ?>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Resolved
+                                    </span>
+                                    <small class="text-muted"><?= timeAgo($res['resolved_at']) ?></small>
+                                </div>
+                                <h6 class="fw-bold text-dark text-truncate mb-1" title="<?= e($res['title']) ?>">
+                                    <?= e($res['title']) ?>
+                                </h6>
+                                <p class="small text-muted mb-2">
+                                    <i class="bi bi-geo-alt-fill text-danger me-1"></i> <?= e($res['ward']) ?>
+                                </p>
+                                <div class="small text-primary fw-semibold mb-2">
+                                    <i class="bi <?= e($res['icon_class'] ?: 'bi-tag') ?> me-1"></i> <?= e($res['category_name']) ?>
+                                </div>
+                                <div class="pt-2 border-top d-flex justify-content-between align-items-center">
+                                    <span class="text-muted" style="font-size:0.75rem;">Ref: <code><?= e($res['reference_number']) ?></code></span>
+                                    <a href="track.php?ref=<?= urlencode($res['reference_number']) ?>" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;">
+                                        View Proof
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+                <div class="mx-auto mb-3 text-muted" style="font-size: 2.8rem;">
+                    <i class="bi bi-shield-check text-primary"></i>
                 </div>
-            <?php endforeach; ?>
-        </div>
+                <h5 class="fw-bold text-dark mb-1">Clean System State — Ready for Real-Time Operations</h5>
+                <p class="text-muted mx-auto mb-3" style="max-width: 540px;">
+                    There are currently no resolved complaints in the database. When citizens report civic issues and municipal crews resolve them, time-stamped resolution evidence and photos will appear here automatically.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="citizen/lodge-complaint.php" class="btn btn-sm btn-primary-civic">
+                        <i class="bi bi-camera-fill me-1"></i> Lodge First Grievance
+                    </a>
+                    <a href="setup.php" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-database me-1"></i> Setup / Demonstration Data
+                    </a>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 </section>
-<?php endif; ?>
 
 <!-- Call to Action Banner -->
 <section class="py-5" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); color: #ffffff;">
@@ -418,25 +448,55 @@ document.addEventListener('DOMContentLoaded', function() {
             attribution: '© OpenStreetMap'
         }).addTo(cityMap);
 
-        // Add sample city hotspot pins
-        const locations = [
-            { lat: 19.0760, lng: 72.8777, title: "Pothole Repaired - SV Road (Resolved)", type: "success" },
-            { lat: 19.1170, lng: 72.9050, title: "Garbage Dump Clearing - Powai (In Progress)", type: "warning" },
-            { lat: 19.1136, lng: 72.8697, title: "Streetlight Cable Repair - Andheri (Assigned)", type: "info" },
-            { lat: 19.0550, lng: 72.8300, title: "Water Pipeline Main - Bandra (Under Review)", type: "danger" }
-        ];
+        const mapData = <?= json_encode($mapPins) ?>;
 
-        locations.forEach(loc => {
-            const marker = L.circleMarker([loc.lat, loc.lng], {
+        if (mapData && mapData.length > 0) {
+            const bounds = [];
+            mapData.forEach(loc => {
+                const lat = parseFloat(loc.latitude);
+                const lng = parseFloat(loc.longitude);
+                if (isNaN(lat) || isNaN(lng)) return;
+
+                let color = '#3b82f6';
+                if (loc.status === 'Resolved') color = '#10b981';
+                else if (loc.status === 'In Progress') color = '#f59e0b';
+                else if (loc.status === 'Under Review' || loc.status === 'Submitted') color = '#0284c7';
+
+                const marker = L.circleMarker([lat, lng], {
+                    radius: 8,
+                    fillColor: color,
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                }).addTo(cityMap);
+
+                bounds.push([lat, lng]);
+                marker.bindPopup(`
+                    <div style="min-width: 170px;">
+                        <span class="badge bg-light text-dark border mb-1">${loc.status}</span>
+                        <div class="fw-bold" style="font-size:0.9rem;">${loc.title}</div>
+                        <div class="text-muted small">${loc.ward || ''}</div>
+                        <div class="mt-1"><a href="track.php?ref=${encodeURIComponent(loc.reference_number)}" class="text-primary text-decoration-none small fw-semibold">View Ticket &rarr;</a></div>
+                    </div>
+                `);
+            });
+
+            if (bounds.length > 0) {
+                cityMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
+            }
+        } else {
+            // Clean state: Center marker indicating live municipal readiness
+            const centerMarker = L.circleMarker([19.0760, 72.8777], {
                 radius: 8,
-                fillColor: loc.type === 'success' ? '#10b981' : (loc.type === 'warning' ? '#f59e0b' : '#3b82f6'),
+                fillColor: '#1d4ed8',
                 color: '#ffffff',
                 weight: 2,
                 opacity: 1,
-                fillOpacity: 0.9
+                fillOpacity: 0.8
             }).addTo(cityMap);
-            marker.bindPopup(`<strong>${loc.title}</strong>`);
-        });
+            centerMarker.bindPopup("<strong>Municipal Command Center</strong><br><small class='text-muted'>City GIS ready. No active complaint pins reported.</small>");
+        }
 
         setTimeout(() => { cityMap.invalidateSize(); }, 300);
     }

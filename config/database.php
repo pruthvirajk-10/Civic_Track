@@ -4,11 +4,18 @@
  * Safe for local XAMPP / WAMP / LAMP setups
  */
 
-// Database credentials - customize if your local MySQL has a different password
-if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
-if (!defined('DB_NAME')) define('DB_NAME', 'civictrack_db');
-if (!defined('DB_USER')) define('DB_USER', 'root');
-if (!defined('DB_PASS')) define('DB_PASS', '');
+// Optional local credentials override for team members (git-ignored)
+if (file_exists(__DIR__ . '/database.local.php')) {
+    require_once __DIR__ . '/database.local.php';
+}
+
+// Database credentials - support environment variables for cloud hosting (Render, Railway, etc.)
+// with automatic safe fallbacks for local XAMPP / WAMP / LAMP setups
+if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+if (!defined('DB_PORT')) define('DB_PORT', getenv('DB_PORT') ?: '3306');
+if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'civictrack_db');
+if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: 'root');
+if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
 if (!defined('DB_CHARSET')) define('DB_CHARSET', 'utf8mb4');
 
 /**
@@ -21,7 +28,7 @@ function getDbConnection(): PDO {
     static $pdo = null;
 
     if ($pdo === null) {
-        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+        $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
         $options = [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

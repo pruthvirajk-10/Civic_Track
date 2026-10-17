@@ -66,6 +66,8 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_feedback') {
         if (!verifyCsrfToken()) {
             setFlash('error', 'Security token invalid. Please try again.');
+        } elseif (!in_array($complaint['status'], ['Resolved', 'Closed'], true)) {
+            setFlash('error', 'Feedback can only be provided for resolved or closed grievances.');
         } else {
             $rating = (int)($_POST['rating'] ?? 5);
             $comments = trim($_POST['comments'] ?? '');
@@ -73,27 +75,35 @@ try {
             if ($rating < 1 || $rating > 5) {
                 setFlash('error', 'Please provide a star rating between 1 and 5.');
             } else {
-                $stmt = $pdo->prepare("
-                    INSERT INTO feedback (complaint_id, citizen_id, rating, comments)
-                    VALUES (?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE rating = VALUES(rating), comments = VALUES(comments)
-                ");
-                $stmt->execute([$complaintId, $userId, $rating, $comments]);
+                try {
+                    $pdo->beginTransaction();
 
-                logComplaintActivity(
-                    $pdo,
-                    $complaintId,
-                    $userId,
-                    'Feedback Provided',
-                    $complaint['status'],
-                    $complaint['status'],
-                    "Citizen submitted {$rating}-star resolution feedback.",
-                    null
-                );
+                    $stmt = $pdo->prepare("
+                        INSERT INTO feedback (complaint_id, citizen_id, rating, comments)
+                        VALUES (?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE rating = VALUES(rating), comments = VALUES(comments)
+                    ");
+                    $stmt->execute([$complaintId, $userId, $rating, $comments]);
 
-                setFlash('success', 'Thank you for your rating! Your feedback helps us improve municipal civic services.');
-                header("Location: complaint-details.php?id={$complaintId}");
-                exit;
+                    logComplaintActivity(
+                        $pdo,
+                        $complaintId,
+                        $userId,
+                        'Feedback Provided',
+                        $complaint['status'],
+                        $complaint['status'],
+                        "Citizen submitted {$rating}-star resolution feedback.",
+                        null
+                    );
+
+                    $pdo->commit();
+                    setFlash('success', 'Thank you for your rating! Your feedback helps us improve municipal civic services.');
+                    header("Location: complaint-details.php?id={$complaintId}");
+                    exit;
+                } catch (Exception $e) {
+                    if ($pdo->inTransaction()) $pdo->rollBack();
+                    setFlash('error', 'Failed to save feedback: ' . $e->getMessage());
+                }
             }
         }
     }
@@ -102,41 +112,51 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reopen_complaint') {
         if (!verifyCsrfToken()) {
             setFlash('error', 'Security token invalid. Please try again.');
+        } elseif (!in_array($complaint['status'], ['Resolved', 'Closed'], true)) {
+            setFlash('error', 'Only resolved or closed grievances can be reopened.');
         } else {
             $reopenReason = trim($_POST['reopen_reason'] ?? '');
 
             if (empty($reopenReason)) {
                 setFlash('error', 'Please provide a clear reason for reopening this grievance.');
             } else {
-                // Update status to Reopened
-                $stmt = $pdo->prepare("UPDATE complaints SET status = 'Reopened', resolved_at = NULL WHERE complaint_id = ?");
-                $stmt->execute([$complaintId]);
+                try {
+                    $pdo->beginTransaction();
 
-                logComplaintActivity(
-                    $pdo,
-                    $complaintId,
-                    $userId,
-                    'Complaint Reopened',
-                    $complaint['status'],
-                    'Reopened',
-                    'Citizen reopened ticket: ' . $reopenReason,
-                    null
-                );
+                    // Update status to Reopened
+                    $stmt = $pdo->prepare("UPDATE complaints SET status = 'Reopened', resolved_at = NULL WHERE complaint_id = ?");
+                    $stmt->execute([$complaintId]);
 
-                // Notify assigned officer or department
-                if (!empty($complaint['assigned_officer_id'])) {
-                    createNotification(
+                    logComplaintActivity(
                         $pdo,
-                        (int)$complaint['assigned_officer_id'],
                         $complaintId,
-                        'Ticket Reopened by Citizen',
-                        "Citizen marked grievance #{$complaint['reference_number']} as unresolved. Reason: {$reopenReason}"
+                        $userId,
+                        'Complaint Reopened',
+                        $complaint['status'],
+                        'Reopened',
+                        'Citizen reopened ticket: ' . $reopenReason,
+                        null
                     );
-                }
 
-                setFlash('warning', 'Grievance ticket has been reopened and escalated back to the department.');
-                header("Location: complaint-details.php?id={$complaintId}");
-                exit;
+                    // Notify assigned officer or department
+                    if (!empty($complaint['assigned_officer_id'])) {
+                        createNotification(
+                            $pdo,
+                            (int)$complaint['assigned_officer_id'],
+                            $complaintId,
+                            'Ticket Reopened by Citizen',
+                            "Citizen marked grievance #{$complaint['reference_number']} as unresolved. Reason: {$reopenReason}"
+                        );
+                    }
+
+                    $pdo->commit();
+                    setFlash('warning', 'Grievance ticket has been reopened and escalated back to the department.');
+                    header("Location: complaint-details.php?id={$complaintId}");
+                    exit;
+                } catch (Exception $e) {
+                    if ($pdo->inTransaction()) $pdo->rollBack();
+                    setFlash('error', 'Failed to reopen grievance: ' . $e->getMessage());
+                }
             }
         }
     }
