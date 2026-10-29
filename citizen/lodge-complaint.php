@@ -28,6 +28,10 @@ try {
     $errors[] = 'Database error loading categories: ' . $e->getMessage();
 }
 
+$cityCenterLat = (float)getSystemSetting('city_center_lat', '18.5204');
+$cityCenterLng = (float)getSystemSetting('city_center_lng', '73.8567');
+$cityZoom = (int)getSystemSetting('city_zoom_level', '13');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrfToken()) {
         $errors[] = 'Security token invalid or expired. Please re-submit.';
@@ -37,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $priority = trim($_POST['priority'] ?? 'Medium');
         $description = trim($_POST['description'] ?? '');
         $address = trim($_POST['address'] ?? '');
-        $ward = trim($_POST['ward'] ?? '');
+        $ward = !empty($_POST['ward']) ? trim($_POST['ward']) : null;
         $latitude = !empty($_POST['latitude']) ? (float)$_POST['latitude'] : null;
         $longitude = !empty($_POST['longitude']) ? (float)$_POST['longitude'] : null;
 
@@ -53,9 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if (empty($address)) {
             $errors[] = 'Please provide the street address or nearest landmark.';
-        }
-        if (empty($ward)) {
-            $errors[] = 'Please select the municipal ward.';
         }
 
         // File upload handling
@@ -121,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'Complaint Lodged',
                     null,
                     'Submitted',
-                    'Citizen lodged complaint with photographic evidence and ward location.',
+                    'Citizen lodged complaint with photographic evidence and location pinpoint.',
                     null
                 );
 
@@ -144,12 +145,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         (int)$off['user_id'],
                         $complaintId,
                         'New Complaint Assigned',
-                        "New grievance #{$refNumber} lodged in {$ward}. Please review evidence."
+                        "New grievance #{$refNumber} lodged" . (!empty($address) ? " at " . e($address) : "") . ". Please review evidence."
                     );
                 }
 
+                // Dispatch SMS to Citizen's Registered Mobile Number
+                $smsDispatch = sendCaseSmsUpdate($pdo, $complaintId, 'Complaint Lodged');
+
                 $pdo->commit();
                 $successRef = $refNumber;
+                $successSms = $smsDispatch;
 
             } catch (Exception $e) {
                 if (isset($pdo) && $pdo->inTransaction()) {
@@ -202,6 +207,19 @@ require_once __DIR__ . '/../includes/header.php';
                         <small class="text-muted text-uppercase fw-bold d-block" style="letter-spacing:0.05em;">Your Reference Number</small>
                         <span class="fs-3 fw-bold font-monospace text-primary"><?= e($successRef) ?></span>
                     </div>
+
+                    <?php if (!empty($successSms) && $successSms['success']): ?>
+                        <div class="alert alert-success d-inline-flex align-items-center gap-2 mx-auto mb-4 text-start small py-2 px-3 shadow-sm border border-success-subtle">
+                            <i class="bi bi-phone-fill fs-5 text-success"></i>
+                            <div>
+                                <strong>SMS Dispatched to Registered Mobile:</strong>
+                                <span class="badge bg-dark ms-1 font-monospace"><?= e($successSms['masked_phone']) ?></span>
+                                <div class="text-muted mt-1" style="font-size:0.8rem;">
+                                    "<?= e($successSms['message']) ?>"
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="d-flex justify-content-center gap-3 flex-wrap">
                         <a href="complaint-details.php?ref=<?= urlencode($successRef) ?>" class="btn btn-primary-civic px-4 py-2">
@@ -322,30 +340,17 @@ require_once __DIR__ . '/../includes/header.php';
                             </div>
                         </div>
 
-                        <!-- Section 3: Geolocation & Ward -->
+                        <!-- Section 3: Geolocation -->
                         <div class="mb-4">
                             <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
-                                <i class="bi bi-3-circle-fill text-primary me-2"></i> Location & Ward Details
+                                <i class="bi bi-3-circle-fill text-primary me-2"></i> Location Details
                             </h6>
 
                             <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label for="ward" class="form-label fw-semibold text-dark small">Municipal Ward / Zone *</label>
-                                    <select class="form-select" id="ward" name="ward" required>
-                                        <option value="">Select Ward...</option>
-                                        <option value="Ward 01 - City Center" <?= (isset($_POST['ward']) && $_POST['ward'] === 'Ward 01 - City Center') ? 'selected' : '' ?>>Ward 01 - City Center</option>
-                                        <option value="Ward 04 - Bandra West" <?= (isset($_POST['ward']) && $_POST['ward'] === 'Ward 04 - Bandra West') ? 'selected' : '' ?>>Ward 04 - Bandra West</option>
-                                        <option value="Ward 07 - Powai" <?= (isset($_POST['ward']) && $_POST['ward'] === 'Ward 07 - Powai') ? 'selected' : '' ?>>Ward 07 - Powai</option>
-                                        <option value="Ward 09 - South Zone" <?= (isset($_POST['ward']) && $_POST['ward'] === 'Ward 09 - South Zone') ? 'selected' : '' ?>>Ward 09 - South Zone</option>
-                                        <option value="Ward 12 - Andheri East" <?= (isset($_POST['ward']) && $_POST['ward'] === 'Ward 12 - Andheri East') ? 'selected' : '' ?>>Ward 12 - Andheri East</option>
-                                        <option value="Ward 15 - West Zone" <?= (isset($_POST['ward']) && $_POST['ward'] === 'Ward 15 - West Zone') ? 'selected' : '' ?>>Ward 15 - West Zone</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-6">
+                                <div class="col-12">
                                     <label for="address" class="form-label fw-semibold text-dark small">Exact Street Address / Landmark *</label>
                                     <input type="text" class="form-control" id="address" name="address" 
-                                           placeholder="e.g. Near St. Peter Church, Hill Road" 
+                                           placeholder="e.g. Near Shivajinagar Metro Station, FC Road (or select on map below)" 
                                            value="<?= e($_POST['address'] ?? '') ?>" required>
                                 </div>
 
@@ -353,7 +358,7 @@ require_once __DIR__ . '/../includes/header.php';
                                 <div class="col-12">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <label class="form-label fw-semibold text-dark small mb-0">
-                                            <i class="bi bi-map-fill text-primary me-1"></i> Interactive Pinpoint Map (Click to place pin or drag marker)
+                                             <i class="bi bi-map-fill text-primary me-1"></i> Interactive Pinpoint Map (Click to place pin or drag marker)
                                         </label>
                                         <button type="button" class="btn btn-sm btn-outline-primary" id="detectGpsBtn">
                                             <i class="bi bi-geo-alt me-1"></i> Detect My GPS Location
@@ -367,14 +372,14 @@ require_once __DIR__ . '/../includes/header.php';
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-light">Latitude</span>
                                                 <input type="text" class="form-control font-monospace" id="latitude" name="latitude" 
-                                                       value="<?= e($_POST['latitude'] ?? '19.076000') ?>" readonly>
+                                                       value="<?= e($_POST['latitude'] ?? sprintf('%.6f', $cityCenterLat)) ?>" readonly>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-light">Longitude</span>
                                                 <input type="text" class="form-control font-monospace" id="longitude" name="longitude" 
-                                                       value="<?= e($_POST['longitude'] ?? '72.877700') ?>" readonly>
+                                                       value="<?= e($_POST['longitude'] ?? sprintf('%.6f', $cityCenterLng)) ?>" readonly>
                                             </div>
                                         </div>
                                     </div>
@@ -400,10 +405,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize image preview
     initImagePreview('photo', 'photoPreviewContainer');
 
-    // Initialize Leaflet map
-    const defaultLat = parseFloat(document.getElementById('latitude')?.value) || 19.0760;
-    const defaultLng = parseFloat(document.getElementById('longitude')?.value) || 72.8777;
-    initComplaintMap(defaultLat, defaultLng, 13);
+    // Initialize Leaflet map with Pune coordinates
+    const defaultLat = parseFloat(document.getElementById('latitude')?.value) || <?= json_encode($cityCenterLat) ?>;
+    const defaultLng = parseFloat(document.getElementById('longitude')?.value) || <?= json_encode($cityCenterLng) ?>;
+    initComplaintMap(defaultLat, defaultLng, <?= json_encode($cityZoom) ?>);
 });
 </script>
 

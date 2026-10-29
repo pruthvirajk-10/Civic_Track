@@ -34,11 +34,11 @@ try {
     $stmt->execute([$userId]);
     $kpi['pending'] = (int)$stmt->fetchColumn();
 
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM complaints WHERE citizen_id = ? AND status IN ('Assigned', 'In Progress', 'Reopened')");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM complaints WHERE citizen_id = ? AND status = 'In Progress'");
     $stmt->execute([$userId]);
     $kpi['in_progress'] = (int)$stmt->fetchColumn();
 
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM complaints WHERE citizen_id = ? AND status = 'Resolved'");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM complaints WHERE citizen_id = ? AND status IN ('Resolved', 'Closed')");
     $stmt->execute([$userId]);
     $kpi['resolved'] = (int)$stmt->fetchColumn();
 
@@ -121,54 +121,54 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             </div>
 
-            <!-- KPI Cards -->
+            <!-- KPI Cards (Clickable) -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-lg-3">
-                    <div class="kpi-card">
+                    <a href="my-complaints.php" class="kpi-card kpi-card-clickable" title="View All Complaints">
                         <div>
-                            <div class="kpi-title">Total Lodged</div>
+                            <div class="kpi-title">Total Lodged <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value"><?= $kpi['total'] ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-blue">
                             <i class="bi bi-file-earmark-text"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-lg-3">
-                    <div class="kpi-card">
+                    <a href="my-complaints.php?status=Pending" class="kpi-card kpi-card-clickable" title="View Pending / Awaiting Action Complaints">
                         <div>
-                            <div class="kpi-title">Awaiting Action</div>
+                            <div class="kpi-title">Awaiting Action <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value text-amber"><?= $kpi['pending'] ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-amber">
                             <i class="bi bi-hourglass-split"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-lg-3">
-                    <div class="kpi-card">
+                    <a href="my-complaints.php?status=In+Progress" class="kpi-card kpi-card-clickable" title="View In Progress Complaints">
                         <div>
-                            <div class="kpi-title">In Progress</div>
+                            <div class="kpi-title">In Progress <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value text-primary"><?= $kpi['in_progress'] ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-purple">
                             <i class="bi bi-gear-wide-connected"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-lg-3">
-                    <div class="kpi-card">
+                    <a href="my-complaints.php?status=Resolved" class="kpi-card kpi-card-clickable" title="View Resolved / Completed Complaints">
                         <div>
-                            <div class="kpi-title">Resolved Issues</div>
+                            <div class="kpi-title">Resolved Issues <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value text-success"><?= $kpi['resolved'] ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-green">
                             <i class="bi bi-check-circle-fill"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
 

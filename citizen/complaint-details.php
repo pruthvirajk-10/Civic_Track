@@ -30,8 +30,10 @@ try {
     if ($complaintId > 0) {
         $stmt = $pdo->prepare("
             SELECT c.*, cat.category_name, cat.icon_class, d.dept_name, d.dept_head_email,
+                   cit.name as citizen_name, cit.phone as citizen_phone,
                    o.name as officer_name, o.phone as officer_phone
             FROM complaints c
+            JOIN users cit ON c.citizen_id = cit.user_id
             JOIN complaint_categories cat ON c.category_id = cat.category_id
             JOIN departments d ON c.dept_id = d.dept_id
             LEFT JOIN users o ON c.assigned_officer_id = o.user_id
@@ -42,8 +44,10 @@ try {
     } elseif (!empty($refQuery)) {
         $stmt = $pdo->prepare("
             SELECT c.*, cat.category_name, cat.icon_class, d.dept_name, d.dept_head_email,
+                   cit.name as citizen_name, cit.phone as citizen_phone,
                    o.name as officer_name, o.phone as officer_phone
             FROM complaints c
+            JOIN users cit ON c.citizen_id = cit.user_id
             JOIN complaint_categories cat ON c.category_id = cat.category_id
             JOIN departments d ON c.dept_id = d.dept_id
             LEFT JOIN users o ON c.assigned_officer_id = o.user_id
@@ -149,8 +153,14 @@ try {
                         );
                     }
 
+                    // Dispatch SMS notification to citizen's registered mobile number
+                    $smsResult = sendCaseSmsUpdate($pdo, $complaintId, 'Complaint Reopened', $reopenReason);
+                    $smsNotice = ($smsResult['success'] ?? false) 
+                        ? " 📱 SMS alert sent to your registered mobile ({$smsResult['masked_phone']})." 
+                        : "";
+
                     $pdo->commit();
-                    setFlash('warning', 'Grievance ticket has been reopened and escalated back to the department.');
+                    setFlash('warning', "Grievance ticket has been reopened and escalated back to the department.{$smsNotice}");
                     header("Location: complaint-details.php?id={$complaintId}");
                     exit;
                 } catch (Exception $e) {
@@ -176,6 +186,9 @@ try {
     $fbStmt = $pdo->prepare("SELECT * FROM feedback WHERE complaint_id = ?");
     $fbStmt->execute([$complaintId]);
     $feedback = $fbStmt->fetch();
+
+    // Fetch SMS dispatch history for this grievance
+    $smsLogs = getComplaintSmsLogs($pdo, $complaintId);
 
 } catch (Exception $e) {
     $error = $e->getMessage();
@@ -245,7 +258,6 @@ require_once __DIR__ . '/../includes/header.php';
                             <?php endif; ?>
                         </div>
                     </div>
-                </div>
 
                 <!-- Workflow Step Indicator -->
                 <?php
@@ -288,10 +300,15 @@ require_once __DIR__ . '/../includes/header.php';
                             <div class="p-3 bg-light rounded-3 mb-4">
                                 <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Location Details:</div>
                                 <div class="fw-bold text-dark"><?= e($complaint['address']) ?></div>
-                                <div class="small text-muted mt-1">Ward: <strong><?= e($complaint['ward']) ?></strong></div>
+                                <?php if (!empty($complaint['ward'])): ?>
+                                    <div class="small text-muted mt-1">Ward: <strong><?= e($complaint['ward']) ?></strong></div>
+                                <?php endif; ?>
                                 <?php if (!empty($complaint['latitude']) && !empty($complaint['longitude'])): ?>
-                                    <div class="small text-muted mt-1">
-                                        Coordinates: <code><?= e($complaint['latitude']) ?>, <?= e($complaint['longitude']) ?></code>
+                                    <div class="small text-muted mt-1 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                        <span>Coordinates: <code><?= e($complaint['latitude']) ?>, <?= e($complaint['longitude']) ?></code></span>
+                                        <a href="https://www.google.com/maps?q=<?= urlencode($complaint['latitude'] . ',' . $complaint['longitude']) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.78rem;">
+                                            <i class="bi bi-box-arrow-up-right me-1"></i> Open Google Maps
+                                        </a>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -447,8 +464,71 @@ require_once __DIR__ . '/../includes/header.php';
                             <?php endif; ?>
                         </div>
                     </div>
+
+                    <!-- Registered Mobile SMS Updates Card -->
+                    <div class="card border-0 shadow-sm rounded-4 bg-white mt-4">
+                        <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold text-dark mb-0">
+                                <i class="bi bi-phone-vibrate-fill me-2 text-success"></i> Registered Mobile SMS Alerts
+                            </h6>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                <i class="bi bi-shield-check me-1"></i> SMS Active
+                            </span>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded-3 mb-3 border">
+                                <div>
+                                    <small class="text-muted d-block">Alerts Delivered To:</small>
+                                    <span class="fw-bold text-dark font-monospace">
+                                        <i class="bi bi-phone me-1 text-primary"></i><?= e(maskPhoneNumber($complaint['citizen_phone'] ?? '')) ?>
+                                    </span>
+                                </div>
+                                <span class="badge bg-dark"><?= count($smsLogs) ?> Sent</span>
+                            </div>
+
+                            <?php if (!empty($smsLogs)): ?>
+                                <div class="d-flex flex-column gap-3">
+                                    <?php foreach ($smsLogs as $sms): ?>
+                                        <div class="p-3 rounded-3 border bg-light bg-opacity-50">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">
+                                                    <?= e($sms['event_type']) ?>
+                                                </span>
+                                                <span class="text-muted" style="font-size:0.75rem;">
+                                                    <i class="bi bi-clock me-1"></i><?= timeAgo($sms['created_at']) ?>
+                                                </span>
+                                            </div>
+                                            <div class="p-2 bg-white rounded-2 border my-2 text-dark font-monospace" style="font-size:0.83rem; line-height:1.5;">
+                                                <i class="bi bi-chat-quote-fill text-muted me-1"></i><?= e($sms['message']) ?>
+                                            </div>
+                                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-1" style="font-size:0.75rem;">
+                                                <?php if ($sms['status'] === 'Delivered'): ?>
+                                                    <span class="text-success fw-semibold">
+                                                        <i class="bi bi-check2-all me-1"></i>Delivered to <?= e(maskPhoneNumber($sms['recipient_phone'])) ?>
+                                                    </span>
+                                                <?php elseif ($sms['status'] === 'Failed'): ?>
+                                                    <span class="text-danger fw-semibold" title="<?= e($sms['gateway_response'] ?? '') ?>">
+                                                        <i class="bi bi-exclamation-circle-fill me-1"></i><?= e($sms['gateway_response'] ?? 'Gateway Notice') ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="text-secondary fw-semibold">
+                                                        <i class="bi bi-arrow-repeat me-1"></i><?= e($sms['status']) ?> &bull; <?= e(maskPhoneNumber($sms['recipient_phone'])) ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                                <span class="text-muted"><?= date('d M, h:i A', strtotime($sms['created_at'])) ?></span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="text-center py-3 text-muted small">
+                                    <i class="bi bi-chat-dots fs-3 d-block mb-1 text-secondary opacity-50"></i>
+                                    All status updates (Assignment, In Progress, Resolution) are automatically dispatched via SMS to your registered mobile number <strong><?= e(maskPhoneNumber($complaint['citizen_phone'] ?? '')) ?></strong>.
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
-            </div>
         </main>
     </div>
 </div>

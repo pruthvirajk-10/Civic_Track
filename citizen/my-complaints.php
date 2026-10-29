@@ -21,6 +21,9 @@ $searchTerm = trim($_GET['search'] ?? '');
 
 $complaints = [];
 $categories = [];
+$statusHeading = 'All Lodged Complaints';
+$statusBadge = '';
+$isFiltered = false;
 
 try {
     $pdo = getDbConnection();
@@ -40,18 +43,41 @@ try {
     $params = [':citizen_id' => $userId];
 
     if (!empty($statusFilter)) {
-        $sql .= " AND c.status = :status";
-        $params[':status'] = $statusFilter;
+        $normStatus = strtolower(str_replace(['_', '-'], ' ', $statusFilter));
+        if ($normStatus === 'pending' || $normStatus === 'awaiting action') {
+            $sql .= " AND c.status IN ('Submitted', 'Under Review')";
+            $statusHeading = 'Pending / Awaiting Action Complaints';
+            $statusBadge = 'Pending / Awaiting Action';
+            $isFiltered = true;
+        } elseif ($normStatus === 'in progress') {
+            $sql .= " AND c.status = 'In Progress'";
+            $statusHeading = 'In Progress Complaints';
+            $statusBadge = 'In Progress';
+            $isFiltered = true;
+        } elseif ($normStatus === 'resolved' || $normStatus === 'completed') {
+            $sql .= " AND c.status IN ('Resolved', 'Closed')";
+            $statusHeading = 'Resolved / Completed Complaints';
+            $statusBadge = 'Resolved / Completed';
+            $isFiltered = true;
+        } else {
+            $sql .= " AND c.status = :status";
+            $params[':status'] = $statusFilter;
+            $statusHeading = e($statusFilter) . ' Complaints';
+            $statusBadge = e($statusFilter);
+            $isFiltered = true;
+        }
     }
 
     if ($categoryFilter > 0) {
         $sql .= " AND c.category_id = :category_id";
         $params[':category_id'] = $categoryFilter;
+        $isFiltered = true;
     }
 
     if (!empty($searchTerm)) {
         $sql .= " AND (c.reference_number LIKE :search OR c.title LIKE :search OR c.address LIKE :search)";
         $params[':search'] = '%' . $searchTerm . '%';
+        $isFiltered = true;
     }
 
     $sql .= " ORDER BY c.created_at DESC";
@@ -64,7 +90,7 @@ try {
     $error = $e->getMessage();
 }
 
-$pageTitle = 'My Complaints — CivicTrack';
+$pageTitle = e($statusHeading) . ' — CivicTrack';
 $isDashboard = true;
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -79,14 +105,30 @@ require_once __DIR__ . '/../includes/header.php';
                     <i class="bi bi-list fs-5"></i>
                 </button>
                 <div>
-                    <h5 class="fw-bold text-dark mb-0">My Lodged Complaints</h5>
-                    <small class="text-muted">Total records: <?= count($complaints) ?></small>
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="fw-bold text-dark mb-0"><?= e($statusHeading) ?></h5>
+                        <?php if ($isFiltered): ?>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small">
+                                <i class="bi bi-funnel-fill me-1"></i><?= e($statusBadge) ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <small class="text-muted">
+                        Showing <strong><?= count($complaints) ?></strong> complaint record(s)
+                    </small>
                 </div>
             </div>
 
-            <a href="lodge-complaint.php" class="btn btn-sm btn-primary-civic d-flex align-items-center gap-1">
-                <i class="bi bi-plus-circle-fill"></i> Lodge New Grievance
-            </a>
+            <div class="d-flex align-items-center gap-2">
+                <?php if ($isFiltered): ?>
+                    <a href="my-complaints.php" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Clear Filter & View All
+                    </a>
+                <?php endif; ?>
+                <a href="lodge-complaint.php" class="btn btn-sm btn-primary-civic d-flex align-items-center gap-1">
+                    <i class="bi bi-plus-circle-fill"></i> Lodge New Grievance
+                </a>
+            </div>
         </header>
 
         <main class="dashboard-content">
@@ -107,19 +149,22 @@ require_once __DIR__ . '/../includes/header.php';
                         </div>
 
                         <div class="col-md-3">
-                            <select name="status" class="form-select form-select-sm">
+                            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">-- All Statuses --</option>
+                                <option value="Pending" <?= (strcasecmp($statusFilter, 'Pending') === 0 || strcasecmp($statusFilter, 'awaiting action') === 0) ? 'selected' : '' ?>>Pending / Awaiting Action</option>
+                                <option value="In Progress" <?= (strcasecmp($statusFilter, 'In Progress') === 0 || strcasecmp($statusFilter, 'in_progress') === 0) ? 'selected' : '' ?>>In Progress</option>
+                                <option value="Resolved" <?= (strcasecmp($statusFilter, 'Resolved') === 0 || strcasecmp($statusFilter, 'completed') === 0) ? 'selected' : '' ?>>Resolved / Completed</option>
+                                <option disabled>──────────</option>
                                 <option value="Submitted" <?= ($statusFilter === 'Submitted') ? 'selected' : '' ?>>Submitted</option>
                                 <option value="Under Review" <?= ($statusFilter === 'Under Review') ? 'selected' : '' ?>>Under Review</option>
                                 <option value="Assigned" <?= ($statusFilter === 'Assigned') ? 'selected' : '' ?>>Assigned</option>
-                                <option value="In Progress" <?= ($statusFilter === 'In Progress') ? 'selected' : '' ?>>In Progress</option>
-                                <option value="Resolved" <?= ($statusFilter === 'Resolved') ? 'selected' : '' ?>>Resolved</option>
+                                <option value="Closed" <?= ($statusFilter === 'Closed') ? 'selected' : '' ?>>Closed</option>
                                 <option value="Reopened" <?= ($statusFilter === 'Reopened') ? 'selected' : '' ?>>Reopened</option>
                             </select>
                         </div>
 
                         <div class="col-md-3">
-                            <select name="category" class="form-select form-select-sm">
+                            <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="0">-- All Categories --</option>
                                 <?php foreach ($categories as $cat): ?>
                                     <option value="<?= $cat['category_id'] ?>" <?= ($categoryFilter == $cat['category_id']) ? 'selected' : '' ?>>
@@ -133,7 +178,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <button type="submit" class="btn btn-sm btn-primary-civic w-100">
                                 Filter
                             </button>
-                            <?php if (!empty($statusFilter) || $categoryFilter > 0 || !empty($searchTerm)): ?>
+                            <?php if ($isFiltered): ?>
                                 <a href="my-complaints.php" class="btn btn-sm btn-outline-secondary" title="Reset Filters">
                                     <i class="bi bi-x-lg"></i>
                                 </a>
@@ -214,10 +259,17 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php else: ?>
                         <div class="text-center py-5">
                             <i class="bi bi-folder-x fs-1 text-muted d-block mb-2"></i>
-                            <h6 class="fw-bold text-dark">No Complaints Found</h6>
-                            <p class="text-muted small mb-3">No matching complaints found for the selected filter parameters.</p>
+                            <h6 class="fw-bold text-dark">No <?= e($statusHeading) ?> Found</h6>
+                            <p class="text-muted small mb-3">
+                                <?= $isFiltered ? 'No grievances match the current status or filter criteria.' : 'You have not lodged any complaints yet.' ?>
+                            </p>
+                            <?php if ($isFiltered): ?>
+                                <a href="my-complaints.php" class="btn btn-outline-primary btn-sm px-3 me-2">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Clear Filters & View All
+                                </a>
+                            <?php endif; ?>
                             <a href="lodge-complaint.php" class="btn btn-primary-civic btn-sm px-3">
-                                Lodge New Grievance
+                                <i class="bi bi-plus-circle me-1"></i> Lodge New Grievance
                             </a>
                         </div>
                     <?php endif; ?>

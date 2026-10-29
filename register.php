@@ -171,12 +171,15 @@ require_once __DIR__ . '/includes/navbar.php';
                                 <label for="ward" class="form-label fw-semibold text-dark small">Ward / Municipal Zone *</label>
                                 <select class="form-select" id="ward" name="ward" required>
                                     <option value="">Select Ward / Area...</option>
-                                    <option value="Ward 01 - City Center" <?= ($formData['ward'] === 'Ward 01 - City Center') ? 'selected' : '' ?>>Ward 01 - City Center</option>
-                                    <option value="Ward 04 - Bandra West" <?= ($formData['ward'] === 'Ward 04 - Bandra West') ? 'selected' : '' ?>>Ward 04 - Bandra West</option>
-                                    <option value="Ward 07 - Powai" <?= ($formData['ward'] === 'Ward 07 - Powai') ? 'selected' : '' ?>>Ward 07 - Powai</option>
-                                    <option value="Ward 09 - South Zone" <?= ($formData['ward'] === 'Ward 09 - South Zone') ? 'selected' : '' ?>>Ward 09 - South Zone</option>
-                                    <option value="Ward 12 - Andheri East" <?= ($formData['ward'] === 'Ward 12 - Andheri East') ? 'selected' : '' ?>>Ward 12 - Andheri East</option>
-                                    <option value="Ward 15 - West Zone" <?= ($formData['ward'] === 'Ward 15 - West Zone') ? 'selected' : '' ?>>Ward 15 - West Zone</option>
+                                    <option value="Ward 01 - Shivajinagar / Ghole Road" <?= ($formData['ward'] === 'Ward 01 - Shivajinagar / Ghole Road') ? 'selected' : '' ?>>Ward 01 - Shivajinagar / Ghole Road</option>
+                                    <option value="Ward 02 - Kothrud / Bavdhan" <?= ($formData['ward'] === 'Ward 02 - Kothrud / Bavdhan') ? 'selected' : '' ?>>Ward 02 - Kothrud / Bavdhan</option>
+                                    <option value="Ward 03 - Aundh / Baner" <?= ($formData['ward'] === 'Ward 03 - Aundh / Baner') ? 'selected' : '' ?>>Ward 03 - Aundh / Baner</option>
+                                    <option value="Ward 04 - Kasba / Vishrambaugwada (City Center)" <?= ($formData['ward'] === 'Ward 04 - Kasba / Vishrambaugwada (City Center)') ? 'selected' : '' ?>>Ward 04 - Kasba / Vishrambaugwada (City Center)</option>
+                                    <option value="Ward 05 - Viman Nagar / Nagar Road" <?= ($formData['ward'] === 'Ward 05 - Viman Nagar / Nagar Road') ? 'selected' : '' ?>>Ward 05 - Viman Nagar / Nagar Road</option>
+                                    <option value="Ward 06 - Hadapsar / Magarpatta" <?= ($formData['ward'] === 'Ward 06 - Hadapsar / Magarpatta') ? 'selected' : '' ?>>Ward 06 - Hadapsar / Magarpatta</option>
+                                    <option value="Ward 07 - Hinjewadi / Wakad" <?= ($formData['ward'] === 'Ward 07 - Hinjewadi / Wakad') ? 'selected' : '' ?>>Ward 07 - Hinjewadi / Wakad</option>
+                                    <option value="Ward 08 - Swargate / Bibwewadi" <?= ($formData['ward'] === 'Ward 08 - Swargate / Bibwewadi') ? 'selected' : '' ?>>Ward 08 - Swargate / Bibwewadi</option>
+                                    <option value="Ward 09 - Sinhagad Road / Dhayari" <?= ($formData['ward'] === 'Ward 09 - Sinhagad Road / Dhayari') ? 'selected' : '' ?>>Ward 09 - Sinhagad Road / Dhayari</option>
                                 </select>
                             </div>
 

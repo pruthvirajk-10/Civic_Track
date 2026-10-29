@@ -56,26 +56,26 @@ INSERT INTO `users` (`user_id`, `name`, `email`, `phone`, `password`, `role`, `d
 (6, 'Pooja Iyer (Drainage Officer)', 'officer.drainage@civictrack.gov', '+91 9820123455', '$2y$10$0P01Y/G6q3x9Y5KqXk3jXeZ5aW1sY2d4m3n5o6p7q8r9s0t1u2v3w', 'officer', 5, 'active', 'Stormwater & Sewage Command Cell', 'West Zone - Ward 15'),
 
 -- Citizens
-(7, 'Aarav Mehta', 'aarav.mehta@example.com', '+91 9876543210', '$2y$10$0P01Y/G6q3x9Y5KqXk3jXeZ5aW1sY2d4m3n5o6p7q8r9s0t1u2v3w', 'citizen', NULL, 'active', 'Flat 402, Green Meadows, MG Road', 'Ward 04 - Bandra West'),
-(8, 'Priya Nair', 'priya.nair@example.com', '+91 9876543211', '$2y$10$0P01Y/G6q3x9Y5KqXk3jXeZ5aW1sY2d4m3n5o6p7q8r9s0t1u2v3w', 'citizen', NULL, 'active', 'House No 12, Lakeview Enclave', 'Ward 07 - Powai'),
-(9, 'Rohan Verma', 'rohan.verma@example.com', '+91 9876543212', '$2y$10$0P01Y/G6q3x9Y5KqXk3jXeZ5aW1sY2d4m3n5o6p7q8r9s0t1u2v3w', 'citizen', NULL, 'active', 'B-14, Shanti Nagar, Station Road', 'Ward 12 - Andheri East');
+(7, 'Aarav Mehta', 'aarav.mehta@example.com', '+91 9876543210', '$2y$10$0P01Y/G6q3x9Y5KqXk3jXeZ5aW1sY2d4m3n5o6p7q8r9s0t1u2v3w', 'citizen', NULL, 'active', 'Flat 402, Green Meadows, FC Road', 'Ward 01 - Shivajinagar / Ghole Road'),
+(8, 'Priya Nair', 'priya.nair@example.com', '+91 9876543211', '$2y$10$0P01Y/G6q3x9Y5KqXk3jXeZ5aW1sY2d4m3n5o6p7q8r9s0t1u2v3w', 'citizen', NULL, 'active', 'House No 12, Gulmohar Enclave, Paud Road, Kothrud', 'Ward 02 - Kothrud / Bavdhan'),
+(9, 'Rohan Verma', 'rohan.verma@example.com', '+91 9876543212', '$2y$10$0P01Y/G6q3x9Y5KqXk3jXeZ5aW1sY2d4m3n5o6p7q8r9s0t1u2v3w', 'citizen', NULL, 'active', 'B-14, Shanti Heights, Baner Road', 'Ward 03 - Aundh / Baner');
 
 -- --------------------------------------------------------
 -- 4. Sample Complaints Data
 -- --------------------------------------------------------
 TRUNCATE TABLE `complaints`;
 INSERT INTO `complaints` (`complaint_id`, `reference_number`, `citizen_id`, `category_id`, `dept_id`, `title`, `description`, `priority`, `image_url`, `latitude`, `longitude`, `address`, `ward`, `status`, `assigned_officer_id`, `sla_deadline`, `created_at`, `resolved_at`) VALUES
-(1, 'CT-2026-10001', 7, 1, 1, 'Deep hazardous pothole near Metro Station Pillar 42', 'A large crater roughly 2 feet wide has formed on the main carriageway. Multiple two-wheelers have skidded here during rains. Immediate asphalt patching needed.', 'High', 'uploads/complaints/sample_pothole.jpg', 19.07600000, 72.87770000, 'Metro Pillar 42, SV Road, Bandra West', 'Ward 04 - Bandra West', 'Resolved', 2, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY)),
+(1, 'CT-2026-10001', 7, 1, 1, 'Deep hazardous pothole near Metro Station Pillar 42', 'A large crater roughly 2 feet wide has formed on the main carriageway. Multiple two-wheelers have skidded here during rains. Immediate asphalt patching needed.', 'High', 'uploads/complaints/sample_pothole.jpg', 18.53140000, 73.84460000, 'Near Shivajinagar Metro Station, FC Road', 'Ward 01 - Shivajinagar / Ghole Road', 'Resolved', 2, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY)),
 
-(2, 'CT-2026-10002', 8, 3, 2, 'Garbage dump overflowing outside community park', 'Commercial waste and domestic trash has been dumped in the open for 3 days. Severe stench and stray dogs gathering around. Needs urgent mechanical loader pickup.', 'High', 'uploads/complaints/sample_garbage.jpg', 19.11700000, 72.90500000, 'Gate 2, Central Park Road, Powai', 'Ward 07 - Powai', 'In Progress', 3, DATE_ADD(NOW(), INTERVAL 12 HOUR), DATE_SUB(NOW(), INTERVAL 1 DAY), NULL),
+(2, 'CT-2026-10002', 8, 3, 2, 'Garbage dump overflowing outside community park', 'Commercial waste and domestic trash has been dumped in the open for 3 days. Severe stench and stray dogs gathering around. Needs urgent mechanical loader pickup.', 'High', 'uploads/complaints/sample_garbage.jpg', 18.50740000, 73.80770000, 'Near Joggers Park, Paud Road, Kothrud', 'Ward 02 - Kothrud / Bavdhan', 'In Progress', 3, DATE_ADD(NOW(), INTERVAL 12 HOUR), DATE_SUB(NOW(), INTERVAL 1 DAY), NULL),
 
-(3, 'CT-2026-10003', 9, 2, 3, 'Dark street stretch: 4 consecutive streetlights not functioning', 'Street lamps from pole #18 to #21 are completely dead since Friday night. Area has become pitch black and unsafe for women and pedestrians.', 'Medium', 'uploads/complaints/sample_streetlight.jpg', 19.11360000, 72.86970000, 'Cross Road No 5, Chakala, Andheri East', 'Ward 12 - Andheri East', 'Assigned', 4, DATE_ADD(NOW(), INTERVAL 18 HOUR), DATE_SUB(NOW(), INTERVAL 6 HOUR), NULL),
+(3, 'CT-2026-10003', 9, 2, 3, 'Dark street stretch: 4 consecutive streetlights not functioning', 'Street lamps from pole #18 to #21 are completely dead since Friday night. Area has become pitch black and unsafe for women and pedestrians.', 'Medium', 'uploads/complaints/sample_streetlight.jpg', 18.55900000, 73.78680000, 'Cross Road No 3, Baner High Street, Baner', 'Ward 03 - Aundh / Baner', 'Assigned', 4, DATE_ADD(NOW(), INTERVAL 18 HOUR), DATE_SUB(NOW(), INTERVAL 6 HOUR), NULL),
 
-(4, 'CT-2026-10004', 7, 5, 4, 'Major potable water pipeline burst gushing drinking water', 'High-pressure clean water is gushing out on the sidewalk and flooding the adjacent residential driveway. Thousands of liters getting wasted.', 'Urgent', 'uploads/complaints/sample_water.jpg', 19.05500000, 72.83000000, 'Opposite St. Peter Church, Hill Road', 'Ward 04 - Bandra West', 'Under Review', 5, DATE_ADD(NOW(), INTERVAL 8 HOUR), DATE_SUB(NOW(), INTERVAL 2 HOUR), NULL),
+(4, 'CT-2026-10004', 7, 5, 4, 'Major potable water pipeline burst gushing drinking water', 'High-pressure clean water is gushing out on the sidewalk and flooding the adjacent residential driveway. Thousands of liters getting wasted.', 'Urgent', 'uploads/complaints/sample_water.jpg', 18.56790000, 73.91430000, 'Opposite Phoenix Marketcity, Viman Nagar', 'Ward 05 - Viman Nagar / Nagar Road', 'Under Review', 5, DATE_ADD(NOW(), INTERVAL 8 HOUR), DATE_SUB(NOW(), INTERVAL 2 HOUR), NULL),
 
-(5, 'CT-2026-10005', 8, 4, 5, 'Blocked sewer manhole overflowing foul black sewage', 'Drain is completely clogged with plastic and silt. Dirty water overflowing onto the main market entrance. Health hazard.', 'High', 'uploads/complaints/sample_drainage.jpg', 19.12000000, 72.91000000, 'Municipal Market Lane, Hiranandani', 'Ward 07 - Powai', 'Submitted', NULL, DATE_ADD(NOW(), INTERVAL 30 HOUR), NOW(), NULL),
+(5, 'CT-2026-10005', 8, 4, 5, 'Blocked sewer manhole overflowing foul black sewage', 'Drain is completely clogged with plastic and silt. Dirty water overflowing onto the main market entrance. Health hazard.', 'High', 'uploads/complaints/sample_drainage.jpg', 18.50890000, 73.92600000, 'Near Destination Centre, Magarpatta City, Hadapsar', 'Ward 06 - Hadapsar / Magarpatta', 'Submitted', NULL, DATE_ADD(NOW(), INTERVAL 30 HOUR), NOW(), NULL),
 
-(6, 'CT-2026-10006', 9, 6, 6, 'Damaged concrete pedestrian footpath tiles', 'Paver blocks have caved in creating tripping hazards for elderly walkers.', 'Low', NULL, 19.11500000, 72.87200000, 'Near Western Express Highway exit, Andheri', 'Ward 12 - Andheri East', 'In Progress', NULL, DATE_SUB(NOW(), INTERVAL 5 HOUR), DATE_SUB(NOW(), INTERVAL 3 DAY), NULL);
+(6, 'CT-2026-10006', 9, 6, 6, 'Damaged concrete pedestrian footpath tiles', 'Paver blocks have caved in creating tripping hazards for elderly walkers.', 'Low', NULL, 18.50180000, 73.85360000, 'Near Sarasbaug, Swargate', 'Ward 08 - Swargate / Bibwewadi', 'In Progress', NULL, DATE_SUB(NOW(), INTERVAL 5 HOUR), DATE_SUB(NOW(), INTERVAL 3 DAY), NULL);
 
 -- --------------------------------------------------------
 -- 5. Complaint Status Logs (Audit trail)
@@ -84,12 +84,12 @@ TRUNCATE TABLE `complaint_logs`;
 INSERT INTO `complaint_logs` (`complaint_id`, `user_id`, `action`, `previous_status`, `new_status`, `remarks`, `proof_image`, `created_at`) VALUES
 (1, 7, 'Complaint Lodged', NULL, 'Submitted', 'Complaint submitted with photo attachment and geolocation.', NULL, DATE_SUB(NOW(), INTERVAL 4 DAY)),
 (1, 1, 'Auto Routed', 'Submitted', 'Under Review', 'Automatically routed to Roads and Public Works department based on category.', NULL, DATE_SUB(NOW(), INTERVAL 4 DAY)),
-(1, 2, 'Assigned to Inspection Team', 'Under Review', 'Assigned', 'Assigned to Ward 04 Quick Response Patching Unit.', NULL, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(1, 2, 'Assigned to Inspection Team', 'Under Review', 'Assigned', 'Assigned to Ward 01 Quick Response Patching Unit.', NULL, DATE_SUB(NOW(), INTERVAL 3 DAY)),
 (1, 2, 'Work Started', 'Assigned', 'In Progress', 'Hot-mix asphalt dispatch requested. Work commenced at 10:00 AM.', NULL, DATE_SUB(NOW(), INTERVAL 2 DAY)),
 (1, 2, 'Issue Resolved', 'In Progress', 'Resolved', 'Pothole filled and leveled with bituminous cold/hot mix. Road surface restored.', 'uploads/resolutions/resolved_pothole.jpg', DATE_SUB(NOW(), INTERVAL 1 DAY)),
 
 (2, 8, 'Complaint Lodged', NULL, 'Submitted', 'Citizen reported open garbage pile.', NULL, DATE_SUB(NOW(), INTERVAL 1 DAY)),
-(2, 3, 'Reviewed & Dispatched', 'Submitted', 'In Progress', 'Compactor vehicle truck #MH-04-AX-9912 dispatched for clearing.', NULL, DATE_SUB(NOW(), INTERVAL 12 HOUR)),
+(2, 3, 'Reviewed & Dispatched', 'Submitted', 'In Progress', 'Compactor vehicle truck #MH-12-AX-9912 dispatched for clearing.', NULL, DATE_SUB(NOW(), INTERVAL 12 HOUR)),
 
 (3, 9, 'Complaint Lodged', NULL, 'Submitted', 'Citizen reported non-functional streetlights.', NULL, DATE_SUB(NOW(), INTERVAL 6 HOUR)),
 (3, 4, 'Work Order Issued', 'Submitted', 'Assigned', 'Electrician team scheduled for evening feeder cable check.', NULL, DATE_SUB(NOW(), INTERVAL 3 HOUR)),
@@ -113,7 +113,7 @@ INSERT INTO `notifications` (`user_id`, `complaint_id`, `title`, `message`, `is_
 (8, 2, 'Work In Progress', 'Sanitation truck dispatched for complaint CT-2026-10002. Expected clearing within 12 hours.', 0, DATE_SUB(NOW(), INTERVAL 12 HOUR)),
 (9, 3, 'Complaint Assigned', 'Complaint CT-2026-10003 assigned to Electrical Substation team.', 0, DATE_SUB(NOW(), INTERVAL 3 HOUR)),
 (7, 4, 'Complaint Under Review', 'Water Supply engineers reviewing emergency complaint CT-2026-10004.', 0, DATE_SUB(NOW(), INTERVAL 1 HOUR)),
-(2, 1, 'New Assignment', 'New road repair complaint CT-2026-10001 in Ward 04 allocated to your queue.', 1, DATE_SUB(NOW(), INTERVAL 3 DAY));
+(2, 1, 'New Assignment', 'New road repair complaint CT-2026-10001 in Ward 01 allocated to your queue.', 1, DATE_SUB(NOW(), INTERVAL 3 DAY));
 
 -- --------------------------------------------------------
 -- 8. System Settings Data
@@ -121,10 +121,10 @@ INSERT INTO `notifications` (`user_id`, `complaint_id`, `title`, `message`, `is_
 TRUNCATE TABLE `system_settings`;
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
 ('app_name', 'CivicTrack — Smart City Complaint Management System', 'Platform title'),
-('municipality_name', 'Metropolitan Smart City Municipal Corporation', 'Governing municipal authority'),
-('city_center_lat', '19.0760', 'Default map latitude center'),
-('city_center_lng', '72.8777', 'Default map longitude center'),
-('city_zoom_level', '12', 'Default Leaflet map zoom level'),
+('municipality_name', 'Pune Smart City Municipal Corporation (PMC)', 'Governing municipal authority'),
+('city_center_lat', '18.5204', 'Default map latitude center'),
+('city_center_lng', '73.8567', 'Default map longitude center'),
+('city_zoom_level', '13', 'Default Leaflet map zoom level'),
 ('helpline_phone', '1800-22-2026', 'Toll-free 24/7 civic helpline'),
 ('support_email', 'helpdesk@civictrack.gov', 'Public grievance support email'),
 ('sla_alert_hours_before', '6', 'Hours before deadline to mark as SLA at risk');

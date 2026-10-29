@@ -52,10 +52,10 @@ INSERT INTO `users` (`user_id`, `name`, `email`, `phone`, `password`, `role`, `d
 DELETE FROM `system_settings`;
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
 ('app_name', 'CivicTrack — Smart City Complaint Management System', 'Platform title'),
-('municipality_name', 'Metropolitan Smart City Municipal Corporation', 'Governing municipal authority'),
-('city_center_lat', '19.0760', 'Default map latitude center'),
-('city_center_lng', '72.8777', 'Default map longitude center'),
-('city_zoom_level', '12', 'Default Leaflet map zoom level'),
+('municipality_name', 'Pune Smart City Municipal Corporation (PMC)', 'Governing municipal authority'),
+('city_center_lat', '18.5204', 'Default map latitude center'),
+('city_center_lng', '73.8567', 'Default map longitude center'),
+('city_zoom_level', '13', 'Default Leaflet map zoom level'),
 ('helpline_phone', '1800-22-2026', 'Toll-free 24/7 civic helpline'),
 ('support_email', 'helpdesk@civictrack.gov', 'Public grievance support email'),
 ('sla_alert_hours_before', '6', 'Hours before deadline to mark as SLA at risk');

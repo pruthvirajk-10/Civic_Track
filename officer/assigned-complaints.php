@@ -24,6 +24,9 @@ $searchTerm = trim($_GET['search'] ?? '');
 
 $complaints = [];
 $wards = [];
+$statusHeading = 'Department Complaints Queue';
+$statusBadge = '';
+$isFiltered = false;
 
 try {
     $pdo = getDbConnection();
@@ -44,27 +47,54 @@ try {
     $params = [':dept_id' => $deptId];
 
     if (!empty($statusFilter)) {
-        $sql .= " AND c.status = :status";
-        $params[':status'] = $statusFilter;
+        $normStatus = strtolower(str_replace(['_', '-'], ' ', $statusFilter));
+        if ($normStatus === 'pending' || $normStatus === 'awaiting action') {
+            $sql .= " AND c.status IN ('Submitted', 'Under Review')";
+            $statusHeading = 'Pending / Awaiting Action Complaints';
+            $statusBadge = 'Pending / Awaiting Action';
+            $isFiltered = true;
+        } elseif ($normStatus === 'in progress') {
+            $sql .= " AND c.status = 'In Progress'";
+            $statusHeading = 'In Progress Complaints';
+            $statusBadge = 'In Progress';
+            $isFiltered = true;
+        } elseif ($normStatus === 'resolved' || $normStatus === 'completed') {
+            $sql .= " AND c.status IN ('Resolved', 'Closed')";
+            $statusHeading = 'Resolved / Completed Complaints';
+            $statusBadge = 'Resolved / Completed';
+            $isFiltered = true;
+        } else {
+            $sql .= " AND c.status = :status";
+            $params[':status'] = $statusFilter;
+            $statusHeading = e($statusFilter) . ' Complaints';
+            $statusBadge = e($statusFilter);
+            $isFiltered = true;
+        }
     }
 
     if (!empty($priorityFilter)) {
         $sql .= " AND c.priority = :priority";
         $params[':priority'] = $priorityFilter;
+        $isFiltered = true;
     }
 
     if (!empty($wardFilter)) {
         $sql .= " AND c.ward = :ward";
         $params[':ward'] = $wardFilter;
+        $isFiltered = true;
     }
 
     if ($overdueOnly) {
         $sql .= " AND c.status NOT IN ('Resolved', 'Closed') AND c.sla_deadline < NOW()";
+        $statusHeading = 'SLA Overdue Complaints';
+        $statusBadge = 'SLA Overdue';
+        $isFiltered = true;
     }
 
     if (!empty($searchTerm)) {
         $sql .= " AND (c.reference_number LIKE :search OR c.title LIKE :search OR u.name LIKE :search OR c.address LIKE :search)";
         $params[':search'] = '%' . $searchTerm . '%';
+        $isFiltered = true;
     }
 
     $sql .= " ORDER BY c.created_at DESC";
@@ -77,7 +107,7 @@ try {
     $error = $e->getMessage();
 }
 
-$pageTitle = 'Department Complaints Queue — CivicTrack';
+$pageTitle = e($statusHeading) . ' — CivicTrack';
 $isDashboard = true;
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -92,13 +122,25 @@ require_once __DIR__ . '/../includes/header.php';
                     <i class="bi bi-list fs-5"></i>
                 </button>
                 <div>
-                    <h5 class="fw-bold text-dark mb-0">Department Queue</h5>
-                    <small class="text-muted">Showing <?= count($complaints) ?> complaints</small>
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="fw-bold text-dark mb-0"><?= e($statusHeading) ?></h5>
+                        <?php if ($isFiltered): ?>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small">
+                                <i class="bi bi-funnel-fill me-1"></i><?= e($statusBadge) ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <small class="text-muted">Showing <strong><?= count($complaints) ?></strong> complaint record(s)</small>
                 </div>
             </div>
 
-            <div class="d-flex gap-2">
-                <a href="dashboard.php" class="btn btn-sm btn-outline-secondary">
+            <div class="d-flex align-items-center gap-2">
+                <?php if ($isFiltered): ?>
+                    <a href="assigned-complaints.php" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Clear Filter & View All
+                    </a>
+                <?php endif; ?>
+                <a href="dashboard.php" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-arrow-left me-1"></i> Desk Overview
                 </a>
             </div>
@@ -120,19 +162,22 @@ require_once __DIR__ . '/../includes/header.php';
                         </div>
 
                         <div class="col-md-2">
-                            <select name="status" class="form-select form-select-sm">
+                            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">-- All Statuses --</option>
+                                <option value="Pending" <?= (strcasecmp($statusFilter, 'Pending') === 0 || strcasecmp($statusFilter, 'awaiting action') === 0) ? 'selected' : '' ?>>Pending / Awaiting Action</option>
+                                <option value="In Progress" <?= (strcasecmp($statusFilter, 'In Progress') === 0 || strcasecmp($statusFilter, 'in_progress') === 0) ? 'selected' : '' ?>>In Progress</option>
+                                <option value="Resolved" <?= (strcasecmp($statusFilter, 'Resolved') === 0 || strcasecmp($statusFilter, 'completed') === 0) ? 'selected' : '' ?>>Resolved / Completed</option>
+                                <option disabled>──────────</option>
                                 <option value="Submitted" <?= ($statusFilter === 'Submitted') ? 'selected' : '' ?>>Submitted</option>
                                 <option value="Under Review" <?= ($statusFilter === 'Under Review') ? 'selected' : '' ?>>Under Review</option>
                                 <option value="Assigned" <?= ($statusFilter === 'Assigned') ? 'selected' : '' ?>>Assigned</option>
-                                <option value="In Progress" <?= ($statusFilter === 'In Progress') ? 'selected' : '' ?>>In Progress</option>
-                                <option value="Resolved" <?= ($statusFilter === 'Resolved') ? 'selected' : '' ?>>Resolved</option>
+                                <option value="Closed" <?= ($statusFilter === 'Closed') ? 'selected' : '' ?>>Closed</option>
                                 <option value="Reopened" <?= ($statusFilter === 'Reopened') ? 'selected' : '' ?>>Reopened</option>
                             </select>
                         </div>
 
                         <div class="col-md-2">
-                            <select name="priority" class="form-select form-select-sm">
+                            <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">-- All Priorities --</option>
                                 <option value="Urgent" <?= ($priorityFilter === 'Urgent') ? 'selected' : '' ?>>Urgent</option>
                                 <option value="High" <?= ($priorityFilter === 'High') ? 'selected' : '' ?>>High</option>
@@ -142,7 +187,7 @@ require_once __DIR__ . '/../includes/header.php';
                         </div>
 
                         <div class="col-md-2">
-                            <select name="ward" class="form-select form-select-sm">
+                            <select name="ward" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">-- All Wards --</option>
                                 <?php foreach ($wards as $w): ?>
                                     <option value="<?= e($w) ?>" <?= ($wardFilter === $w) ? 'selected' : '' ?>><?= e($w) ?></option>
@@ -152,7 +197,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                         <div class="col-md-2">
                             <div class="form-check form-check-inline small">
-                                <input class="form-check-input" type="checkbox" id="overdue" name="overdue" value="1" <?= $overdueOnly ? 'checked' : '' ?>>
+                                <input class="form-check-input" type="checkbox" id="overdue" name="overdue" value="1" <?= $overdueOnly ? 'checked' : '' ?> onchange="this.form.submit()">
                                 <label class="form-check-label fw-semibold text-danger" for="overdue">Overdue Only</label>
                             </div>
                         </div>
@@ -161,9 +206,9 @@ require_once __DIR__ . '/../includes/header.php';
                             <button type="submit" class="btn btn-sm btn-primary-civic w-100">
                                 Apply
                             </button>
-                            <?php if (!empty($statusFilter) || !empty($priorityFilter) || !empty($wardFilter) || $overdueOnly || !empty($searchTerm)): ?>
-                                <a href="assigned-complaints.php" class="btn btn-sm btn-outline-secondary" title="Clear">
-                                    <i class="bi bi-x"></i>
+                            <?php if ($isFiltered): ?>
+                                <a href="assigned-complaints.php" class="btn btn-sm btn-outline-secondary" title="Clear All Filters">
+                                    <i class="bi bi-x-lg"></i>
                                 </a>
                             <?php endif; ?>
                         </div>
@@ -243,8 +288,15 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php else: ?>
                         <div class="text-center py-5">
                             <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
-                            <h6 class="fw-bold text-dark">No Matching Complaints</h6>
-                            <p class="text-muted small mb-0">No complaints matching your current filters were found in this department queue.</p>
+                            <h6 class="fw-bold text-dark">No <?= e($statusHeading) ?> Found</h6>
+                            <p class="text-muted small mb-3">
+                                <?= $isFiltered ? 'No complaints match the current filter criteria in this department queue.' : 'No complaints currently assigned to this department queue.' ?>
+                            </p>
+                            <?php if ($isFiltered): ?>
+                                <a href="assigned-complaints.php" class="btn btn-sm btn-outline-primary px-3">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Clear Filters & View All
+                                </a>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>

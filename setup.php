@@ -122,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $pdo->exec("TRUNCATE TABLE `complaint_logs`;");
             $pdo->exec("TRUNCATE TABLE `feedback`;");
             $pdo->exec("TRUNCATE TABLE `notifications`;");
+            $pdo->exec("TRUNCATE TABLE `sms_logs`;");
             $pdo->exec("TRUNCATE TABLE `complaints`;");
             $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
 

@@ -78,6 +78,9 @@ try {
     // If DB is not connected yet, fallbacks are clean zero values
 }
 $mapPins = $mapPins ?? [];
+$cityCenterLat = (float)getSystemSetting('city_center_lat', '18.5204');
+$cityCenterLng = (float)getSystemSetting('city_center_lng', '73.8567');
+$cityZoom = (int)getSystemSetting('city_zoom_level', '12');
 
 require_once __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/includes/navbar.php';
@@ -442,7 +445,11 @@ require_once __DIR__ . '/includes/navbar.php';
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof L !== 'undefined' && document.getElementById('cityPublicMap')) {
-        const cityMap = L.map('cityPublicMap').setView([19.0760, 72.8777], 11);
+        const cityCenterLat = <?= json_encode($cityCenterLat) ?>;
+        const cityCenterLng = <?= json_encode($cityCenterLng) ?>;
+        const cityZoom = <?= json_encode($cityZoom) ?>;
+
+        const cityMap = L.map('cityPublicMap').setView([cityCenterLat, cityCenterLng], cityZoom);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
             attribution: '© OpenStreetMap'
@@ -487,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             // Clean state: Center marker indicating live municipal readiness
-            const centerMarker = L.circleMarker([19.0760, 72.8777], {
+            const centerMarker = L.circleMarker([cityCenterLat, cityCenterLng], {
                 radius: 8,
                 fillColor: '#1d4ed8',
                 color: '#ffffff',

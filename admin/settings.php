@@ -109,7 +109,7 @@ require_once __DIR__ . '/../includes/header.php';
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold text-dark">Governing Municipality Authority Name</label>
                                     <input type="text" class="form-control" name="municipality_name" 
-                                           value="<?= e($settings['municipality_name'] ?? 'Metropolitan Smart City Municipal Corporation') ?>" required>
+                                           value="<?= e($settings['municipality_name'] ?? 'Pune Smart City Municipal Corporation (PMC)') ?>" required>
                                 </div>
 
                                 <div class="row g-3 mb-3">
@@ -133,17 +133,17 @@ require_once __DIR__ . '/../includes/header.php';
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-dark">Center Latitude</label>
                                         <input type="text" class="form-control font-monospace" name="city_center_lat" 
-                                               value="<?= e($settings['city_center_lat'] ?? '19.0760') ?>" required>
+                                               value="<?= e($settings['city_center_lat'] ?? '18.5204') ?>" required>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-dark">Center Longitude</label>
                                         <input type="text" class="form-control font-monospace" name="city_center_lng" 
-                                               value="<?= e($settings['city_center_lng'] ?? '72.8777') ?>" required>
+                                               value="<?= e($settings['city_center_lng'] ?? '73.8567') ?>" required>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold text-dark">Default Zoom Level</label>
                                         <input type="number" class="form-control font-monospace" name="city_zoom_level" 
-                                               value="<?= e($settings['city_zoom_level'] ?? '12') ?>" min="5" max="18" required>
+                                               value="<?= e($settings['city_zoom_level'] ?? '13') ?>" min="5" max="18" required>
                                     </div>
                                 </div>
 

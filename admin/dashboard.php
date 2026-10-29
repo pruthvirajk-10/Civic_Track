@@ -49,13 +49,13 @@ try {
     $stmt = $pdo->query("SELECT COUNT(*) FROM complaints");
     $kpi['total_complaints'] = (int)$stmt->fetchColumn();
 
-    $stmt = $pdo->query("SELECT COUNT(*) FROM complaints WHERE status = 'Submitted'");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM complaints WHERE status IN ('Submitted', 'Under Review')");
     $kpi['new_submitted'] = (int)$stmt->fetchColumn();
 
-    $stmt = $pdo->query("SELECT COUNT(*) FROM complaints WHERE status IN ('Under Review', 'Assigned', 'In Progress', 'Reopened')");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM complaints WHERE status = 'In Progress'");
     $kpi['in_progress'] = (int)$stmt->fetchColumn();
 
-    $stmt = $pdo->query("SELECT COUNT(*) FROM complaints WHERE status = 'Resolved'");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM complaints WHERE status IN ('Resolved', 'Closed')");
     $kpi['resolved'] = (int)$stmt->fetchColumn();
 
     $stmt = $pdo->query("SELECT COUNT(*) FROM complaints WHERE status NOT IN ('Resolved', 'Closed') AND sla_deadline < NOW()");
@@ -187,42 +187,66 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             <?php endif; ?>
 
-            <!-- Executive KPI Cards Row -->
+            <!-- Executive KPI Cards Row (Clickable) -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-md-3">
-                    <div class="kpi-card">
+                    <a href="complaints.php" class="kpi-card kpi-card-clickable" title="View All Lodged Complaints">
                         <div>
-                            <div class="kpi-title">Total Lodged</div>
+                            <div class="kpi-title">Total Lodged <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value"><?= number_format($kpi['total_complaints']) ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-blue">
                             <i class="bi bi-journal-check"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-md-3">
-                    <div class="kpi-card">
+                    <a href="complaints.php?status=Pending" class="kpi-card kpi-card-clickable" title="View Pending / Newly Submitted Complaints">
                         <div>
-                            <div class="kpi-title">Active Resolution</div>
+                            <div class="kpi-title">Pending / New <i class="bi bi-arrow-right-short"></i></div>
+                            <div class="kpi-value text-amber"><?= number_format($kpi['new_submitted']) ?></div>
+                        </div>
+                        <div class="kpi-icon-circle kpi-amber">
+                            <i class="bi bi-inbox-fill"></i>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <a href="complaints.php?status=In+Progress" class="kpi-card kpi-card-clickable" title="View In Progress Complaints">
+                        <div>
+                            <div class="kpi-title">In Progress <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value text-primary"><?= number_format($kpi['in_progress']) ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-purple">
                             <i class="bi bi-gear-wide-connected"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-md-3">
-                    <div class="kpi-card">
+                    <a href="complaints.php?status=Resolved" class="kpi-card kpi-card-clickable" title="View Resolved / Completed Complaints">
                         <div>
-                            <div class="kpi-title">Resolved Issues</div>
+                            <div class="kpi-title">Resolved Issues <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value text-success"><?= number_format($kpi['resolved']) ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-green">
                             <i class="bi bi-check-circle-fill"></i>
                         </div>
-                    </div>
+                    </a>
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <a href="complaints.php?overdue=1" class="kpi-card kpi-card-clickable" title="View SLA Overdue Complaints">
+                        <div>
+                            <div class="kpi-title">SLA Overdue <i class="bi bi-arrow-right-short"></i></div>
+                            <div class="kpi-value text-danger"><?= number_format($kpi['overdue']) ?></div>
+                        </div>
+                        <div class="kpi-icon-circle kpi-red">
+                            <i class="bi bi-alarm-fill"></i>
+                        </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-md-3">
@@ -238,51 +262,27 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
 
                 <div class="col-6 col-md-3">
-                    <div class="kpi-card">
+                    <a href="users.php?role=citizen" class="kpi-card kpi-card-clickable" title="Manage Registered Citizens">
                         <div>
-                            <div class="kpi-title">SLA Overdue</div>
-                            <div class="kpi-value text-danger"><?= number_format($kpi['overdue']) ?></div>
-                        </div>
-                        <div class="kpi-icon-circle kpi-red">
-                            <i class="bi bi-alarm-fill"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-6 col-md-3">
-                    <div class="kpi-card">
-                        <div>
-                            <div class="kpi-title">Newly Submitted</div>
-                            <div class="kpi-value text-amber"><?= number_format($kpi['new_submitted']) ?></div>
-                        </div>
-                        <div class="kpi-icon-circle kpi-amber">
-                            <i class="bi bi-inbox-fill"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-6 col-md-3">
-                    <div class="kpi-card">
-                        <div>
-                            <div class="kpi-title">Active Citizens</div>
+                            <div class="kpi-title">Active Citizens <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value"><?= number_format($kpi['total_citizens']) ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-blue">
                             <i class="bi bi-people-fill"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-md-3">
-                    <div class="kpi-card">
+                    <a href="users.php?role=officer" class="kpi-card kpi-card-clickable" title="Manage Department Officers">
                         <div>
-                            <div class="kpi-title">Field Officers</div>
+                            <div class="kpi-title">Field Officers <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value"><?= number_format($kpi['total_officers']) ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-teal">
                             <i class="bi bi-person-badge-fill"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
 

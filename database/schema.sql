@@ -87,7 +87,7 @@ CREATE TABLE `complaints` (
     `latitude` DECIMAL(10, 8) NULL,
     `longitude` DECIMAL(11, 8) NULL,
     `address` TEXT NOT NULL,
-    `ward` VARCHAR(60) NOT NULL,
+    `ward` VARCHAR(60) NULL,
     `status` ENUM('Submitted', 'Under Review', 'Assigned', 'In Progress', 'Resolved', 'Closed', 'Reopened') DEFAULT 'Submitted',
     `assigned_officer_id` INT NULL,
     `sla_deadline` DATETIME NOT NULL,
@@ -159,7 +159,29 @@ CREATE TABLE `notifications` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- 8. System Settings Table
+-- 8. Mobile SMS Alerts & Dispatch Log Table
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `sms_logs`;
+CREATE TABLE `sms_logs` (
+    `sms_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `complaint_id` INT NULL,
+    `recipient_user_id` INT NOT NULL,
+    `recipient_name` VARCHAR(100) NOT NULL,
+    `recipient_phone` VARCHAR(30) NOT NULL,
+    `event_type` VARCHAR(60) NOT NULL,
+    `message` TEXT NOT NULL,
+    `status` ENUM('Sent', 'Delivered', 'Failed') DEFAULT 'Delivered',
+    `gateway_response` VARCHAR(255) NULL DEFAULT 'Simulation Gateway: OK (200)',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`recipient_user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE,
+    FOREIGN KEY (`complaint_id`) REFERENCES `complaints`(`complaint_id`) ON DELETE SET NULL,
+    INDEX `idx_sms_phone` (`recipient_phone`),
+    INDEX `idx_sms_comp` (`complaint_id`),
+    INDEX `idx_sms_user` (`recipient_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- 9. System Settings Table
 -- --------------------------------------------------------
 DROP TABLE IF EXISTS `system_settings`;
 CREATE TABLE `system_settings` (
@@ -169,4 +191,21 @@ CREATE TABLE `system_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Enable foreign key checks
+-- ========================================================
+-- Table: password_reset_otp
+-- Purpose: Secure OTP verification for password recovery via SMS
+-- ========================================================
+CREATE TABLE IF NOT EXISTS `password_reset_otp` (
+    `otp_id`      INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    `user_id`     INT UNSIGNED     NOT NULL,
+    `phone`       VARCHAR(20)      NOT NULL,
+    `otp_code`    VARCHAR(6)       NOT NULL,
+    `is_used`     TINYINT(1)       NOT NULL DEFAULT 0,
+    `expires_at`  DATETIME         NOT NULL,
+    `created_at`  DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`otp_id`),
+    KEY `idx_user_otp` (`user_id`, `is_used`, `expires_at`),
+    CONSTRAINT `fk_otp_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

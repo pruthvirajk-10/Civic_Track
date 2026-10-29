@@ -45,11 +45,11 @@ try {
         $stmt->execute([$deptId]);
         $kpi['new'] = (int)$stmt->fetchColumn();
 
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM complaints WHERE dept_id = ? AND status IN ('Assigned', 'In Progress', 'Reopened')");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM complaints WHERE dept_id = ? AND status = 'In Progress'");
         $stmt->execute([$deptId]);
         $kpi['in_progress'] = (int)$stmt->fetchColumn();
 
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM complaints WHERE dept_id = ? AND status = 'Resolved'");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM complaints WHERE dept_id = ? AND status IN ('Resolved', 'Closed')");
         $stmt->execute([$deptId]);
         $kpi['resolved'] = (int)$stmt->fetchColumn();
 
@@ -130,66 +130,66 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             <?php endif; ?>
 
-            <!-- KPI Metric Cards -->
+            <!-- KPI Metric Cards (Clickable) -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-lg">
-                    <div class="kpi-card">
+                    <a href="assigned-complaints.php" class="kpi-card kpi-card-clickable" title="View All Department Complaints">
                         <div>
-                            <div class="kpi-title">Department Total</div>
+                            <div class="kpi-title">Department Total <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value"><?= $kpi['total'] ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-blue">
                             <i class="bi bi-folder-fill"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-lg">
-                    <div class="kpi-card">
+                    <a href="assigned-complaints.php?status=Pending" class="kpi-card kpi-card-clickable" title="View New Review / Awaiting Action Complaints">
                         <div>
-                            <div class="kpi-title">New Review</div>
+                            <div class="kpi-title">New Review <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value text-amber"><?= $kpi['new'] ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-amber">
                             <i class="bi bi-eye-fill"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-lg">
-                    <div class="kpi-card">
+                    <a href="assigned-complaints.php?status=In+Progress" class="kpi-card kpi-card-clickable" title="View Active In Progress Complaints">
                         <div>
-                            <div class="kpi-title">Active In Progress</div>
+                            <div class="kpi-title">In Progress <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value text-primary"><?= $kpi['in_progress'] ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-purple">
                             <i class="bi bi-gear-wide-connected"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-lg">
-                    <div class="kpi-card">
+                    <a href="assigned-complaints.php?status=Resolved" class="kpi-card kpi-card-clickable" title="View Resolved / Completed Complaints">
                         <div>
-                            <div class="kpi-title">Resolved Total</div>
+                            <div class="kpi-title">Resolved Total <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value text-success"><?= $kpi['resolved'] ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-green">
                             <i class="bi bi-check-circle-fill"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <div class="col-6 col-lg">
-                    <div class="kpi-card">
+                    <a href="assigned-complaints.php?overdue=1" class="kpi-card kpi-card-clickable" title="View SLA Overdue Complaints">
                         <div>
-                            <div class="kpi-title">SLA Overdue</div>
+                            <div class="kpi-title">SLA Overdue <i class="bi bi-arrow-right-short"></i></div>
                             <div class="kpi-value text-danger"><?= $kpi['overdue'] ?></div>
                         </div>
                         <div class="kpi-icon-circle kpi-red">
                             <i class="bi bi-alarm-fill"></i>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
 

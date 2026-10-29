@@ -27,6 +27,16 @@ $complaints = [];
 $departments = [];
 $categories = [];
 $wards = [];
+$statusHeading = 'All Municipal Grievances';
+$statusBadge = '';
+$isFiltered = false;
+
+if ($deptFilter > 0) $isFiltered = true;
+if ($catFilter > 0) $isFiltered = true;
+if (!empty($priorityFilter)) $isFiltered = true;
+if (!empty($wardFilter)) $isFiltered = true;
+if (!empty($startDate) || !empty($endDate)) $isFiltered = true;
+if (!empty($searchTerm)) $isFiltered = true;
 
 try {
     $pdo = getDbConnection();
@@ -61,8 +71,29 @@ try {
     }
 
     if (!empty($statusFilter)) {
-        $sql .= " AND c.status = :status";
-        $params[':status'] = $statusFilter;
+        $normStatus = strtolower(str_replace(['_', '-'], ' ', $statusFilter));
+        if ($normStatus === 'pending' || $normStatus === 'awaiting action') {
+            $sql .= " AND c.status IN ('Submitted', 'Under Review')";
+            $statusHeading = 'Pending / Awaiting Action Complaints';
+            $statusBadge = 'Pending / Awaiting Action';
+            $isFiltered = true;
+        } elseif ($normStatus === 'in progress') {
+            $sql .= " AND c.status = 'In Progress'";
+            $statusHeading = 'In Progress Complaints';
+            $statusBadge = 'In Progress';
+            $isFiltered = true;
+        } elseif ($normStatus === 'resolved' || $normStatus === 'completed') {
+            $sql .= " AND c.status IN ('Resolved', 'Closed')";
+            $statusHeading = 'Resolved / Completed Complaints';
+            $statusBadge = 'Resolved / Completed';
+            $isFiltered = true;
+        } else {
+            $sql .= " AND c.status = :status";
+            $params[':status'] = $statusFilter;
+            $statusHeading = e($statusFilter) . ' Complaints';
+            $statusBadge = e($statusFilter);
+            $isFiltered = true;
+        }
     }
 
     if (!empty($priorityFilter)) {
@@ -77,6 +108,9 @@ try {
 
     if ($overdueOnly) {
         $sql .= " AND c.status NOT IN ('Resolved', 'Closed') AND c.sla_deadline < NOW()";
+        $statusHeading = 'SLA Overdue Complaints';
+        $statusBadge = 'SLA Overdue';
+        $isFiltered = true;
     }
 
     if (!empty($startDate)) {
@@ -106,7 +140,7 @@ try {
 
 $queryString = http_build_query($_GET);
 
-$pageTitle = 'All Municipal Grievances — CivicTrack Admin';
+$pageTitle = e($statusHeading) . ' — CivicTrack Admin';
 $isDashboard = true;
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -121,12 +155,24 @@ require_once __DIR__ . '/../includes/header.php';
                     <i class="bi bi-list fs-5"></i>
                 </button>
                 <div>
-                    <h5 class="fw-bold text-dark mb-0">Citywide Grievance Management</h5>
-                    <small class="text-muted">Filtered results: <?= count($complaints) ?> tickets</small>
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="fw-bold text-dark mb-0"><?= e($statusHeading) ?></h5>
+                        <?php if ($isFiltered): ?>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small">
+                                <i class="bi bi-funnel-fill me-1"></i><?= e($statusBadge) ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <small class="text-muted">Showing <strong><?= count($complaints) ?></strong> ticket(s)</small>
                 </div>
             </div>
 
             <div class="d-flex align-items-center gap-2">
+                <?php if ($isFiltered): ?>
+                    <a href="complaints.php" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Clear Filter & View All
+                    </a>
+                <?php endif; ?>
                 <a href="export-csv.php?<?= $queryString ?>" class="btn btn-sm btn-outline-success">
                     <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export to CSV
                 </a>
@@ -171,13 +217,15 @@ require_once __DIR__ . '/../includes/header.php';
                         </div>
 
                         <div class="col-md-2">
-                            <select name="status" class="form-select form-select-sm">
+                            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">-- All Statuses --</option>
+                                <option value="Pending" <?= (strcasecmp($statusFilter, 'Pending') === 0 || strcasecmp($statusFilter, 'awaiting action') === 0) ? 'selected' : '' ?>>Pending / Awaiting Action</option>
+                                <option value="In Progress" <?= (strcasecmp($statusFilter, 'In Progress') === 0 || strcasecmp($statusFilter, 'in_progress') === 0) ? 'selected' : '' ?>>In Progress</option>
+                                <option value="Resolved" <?= (strcasecmp($statusFilter, 'Resolved') === 0 || strcasecmp($statusFilter, 'completed') === 0) ? 'selected' : '' ?>>Resolved / Completed</option>
+                                <option disabled>──────────</option>
                                 <option value="Submitted" <?= ($statusFilter === 'Submitted') ? 'selected' : '' ?>>Submitted</option>
                                 <option value="Under Review" <?= ($statusFilter === 'Under Review') ? 'selected' : '' ?>>Under Review</option>
                                 <option value="Assigned" <?= ($statusFilter === 'Assigned') ? 'selected' : '' ?>>Assigned</option>
-                                <option value="In Progress" <?= ($statusFilter === 'In Progress') ? 'selected' : '' ?>>In Progress</option>
-                                <option value="Resolved" <?= ($statusFilter === 'Resolved') ? 'selected' : '' ?>>Resolved</option>
                                 <option value="Closed" <?= ($statusFilter === 'Closed') ? 'selected' : '' ?>>Closed</option>
                                 <option value="Reopened" <?= ($statusFilter === 'Reopened') ? 'selected' : '' ?>>Reopened</option>
                             </select>
@@ -310,8 +358,15 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php else: ?>
                         <div class="text-center py-5">
                             <i class="bi bi-search fs-1 text-muted d-block mb-2"></i>
-                            <h6 class="fw-bold text-dark">No Matching Complaints Found</h6>
-                            <p class="text-muted small mb-0">Try clearing filters to display complaints across all departments.</p>
+                            <h6 class="fw-bold text-dark">No <?= e($statusHeading) ?> Found</h6>
+                            <p class="text-muted small mb-3">
+                                <?= $isFiltered ? 'No complaints match the current filter criteria across municipal departments.' : 'No complaints recorded in the system yet.' ?>
+                            </p>
+                            <?php if ($isFiltered): ?>
+                                <a href="complaints.php" class="btn btn-sm btn-outline-primary px-3">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Clear Filters & View All
+                                </a>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>
