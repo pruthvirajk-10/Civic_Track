@@ -385,28 +385,46 @@ function dispatchFast2Sms(string $phone, string $message): array {
         'numbers' => $cleanPhone
     ];
 
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'https://www.fast2sms.com/dev/bulkV2');
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'authorization: ' . $apiKey,
-        'Content-Type: application/x-www-form-urlencoded',
-        'Cache-Control: no-cache'
-    ]);
+    if (function_exists('curl_init')) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://www.fast2sms.com/dev/bulkV2');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'authorization: ' . $apiKey,
+            'Content-Type: application/x-www-form-urlencoded',
+            'Cache-Control: no-cache'
+        ]);
 
-    $responseRaw = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErr = curl_error($ch);
-    curl_close($ch);
+        $responseRaw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
 
-    if ($curlErr) {
-        return [
-            'status' => 'Failed',
-            'response' => 'Network error connecting to Fast2SMS: ' . $curlErr
+        if ($curlErr) {
+            return [
+                'status' => 'Failed',
+                'response' => 'Network error connecting to Fast2SMS: ' . $curlErr
+            ];
+        }
+    } else {
+        $options = [
+            'http' => [
+                'header'  => "authorization: {$apiKey}\r\nContent-Type: application/x-www-form-urlencoded\r\nCache-Control: no-cache\r\n",
+                'method'  => 'POST',
+                'content' => http_build_query($postData),
+                'timeout' => 10,
+                'ignore_errors' => true
+            ]
         ];
+        $context = stream_context_create($options);
+        $responseRaw = @file_get_contents('https://www.fast2sms.com/dev/bulkV2', false, $context);
+        $httpCode = 200;
+        if (isset($http_response_header) && preg_match('{HTTP\/\S*\s(\d{3})}', $http_response_header[0], $match)) {
+            $httpCode = (int)$match[1];
+        }
     }
 
     $json = json_decode($responseRaw, true);
